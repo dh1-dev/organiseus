@@ -72,67 +72,8 @@ if(!window.supabase || typeof window.supabase.createClient!=='function'){
 }
 const URL='https://meaakswalvliphlexqqd.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lYWFrc3dhbHZsaXBobGV4cXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDE5NzUsImV4cCI6MjEwMDkxNzk3NX0.TQulUFAumLl7V-9Rw6Tm5Vreyp2SyRA8BnYyIdZNyqU';
-// OrganiseUs owns one simple persistent session record. Supabase's automatic
-// persistence is disabled so there is no competing storage or refresh logic.
-const SESSION_KEY='organiseus-session-v3';
-let deliberateSignOut=false;
-const sb=supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:true}});
-function saveSession(session){
-  try{
-    if(!session||!session.access_token||!session.refresh_token)throw new Error('No session returned');
-    localStorage.setItem(SESSION_KEY,JSON.stringify({
-      access_token:session.access_token,
-      refresh_token:session.refresh_token,
-      expires_at:session.expires_at||null,
-      expires_in:session.expires_in||null,
-      token_type:session.token_type||'bearer',
-      user:session.user||null
-    }));
-    return localStorage.getItem(SESSION_KEY)!==null;
-  }catch(err){
-    console.error('Unable to save OrganiseUs session',err);
-    return false;
-  }
-}
-function readSession(){
-  try{
-    const raw=localStorage.getItem(SESSION_KEY);
-    if(!raw)return null;
-    const saved=JSON.parse(raw);
-    if(!saved.access_token||!saved.refresh_token)return null;
-    return saved;
-  }catch(err){
-    console.error('Unable to read OrganiseUs session',err);
-    return null;
-  }
-}
-function removeSession(){try{localStorage.removeItem(SESSION_KEY)}catch(_e){}}
-async function restoreSavedSession(){
-  const saved=readSession();
-  if(!saved)return null;
-  try{
-    const result=await sb.auth.setSession({access_token:saved.access_token,refresh_token:saved.refresh_token});
-    if(result.error||!result.data||!result.data.session){
-      console.error('Session restore failed',result.error);
-      return null;
-    }
-    saveSession(result.data.session);
-    return result.data.session;
-  }catch(err){
-    console.error('Session restore threw',err);
-    return null;
-  }
-}
-async function refreshSavedSession(){
-  try{
-    const result=await sb.auth.refreshSession();
-    if(!result.error&&result.data&&result.data.session){
-      saveSession(result.data.session);
-      return result.data.session;
-    }
-  }catch(err){console.error('Session refresh failed',err)}
-  return null;
-}
+// Use Supabase's standard browser session persistence. No custom token storage.
+const sb=supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], mePerson=null, mode='me', meArea='personal', otherId=null, channel=null, selectedStatus='todo', screen='tasks', calendarView='today', calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1), selectedCalendarDate=new Date().toISOString().slice(0,10);
 let savedShoppingSelection=new Set();
 const $=id=>document.getElementById(id); const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
@@ -311,49 +252,10 @@ function parseCommand(raw){let t=raw.trim().replace(/[.!?]+$/,'');let low=t.toLo
 async function voiceRun(){let raw=$('voiceInput').value.trim();if(!raw)return notify('Type or dictate a command');let done=raw.match(/(.+?)\s+(is|are)?\s*(now)?\s*done$/i);if(done){let names=done[1].split(/\s+and\s+|,/),hits=[];for(const n of names){let t=tasks.find(x=>x.status!=='done'&&x.title.toLowerCase().includes(n.trim().toLowerCase()));if(t){await sb.from('tasks').update({status:'done'}).eq('id',t.id);hits.push(t.title)}}if(hits.length){$('voiceInput').value='';$('voiceMessage').textContent='Completed: '+hits.join(', ');celebrate();notify('✓ Completed');await loadData()}else notify('No matching task');return}if(!/^(please\s+)?(add|create|make)\b/i.test(raw)&&!/^remind me to\b/i.test(raw))return notify('Command not understood');let p=parseCommand(raw);if(p.unknown)return notify(p.unknown+' is not in your People list');if(!p.title)return notify('Task title not recognised');if(p.area==='work'&&p.owner.user_id!==user.id)return notify('Work tasks can only be for yourself');if(p.area==='work'&&p.owner.name==='Milo')return notify('Milo only has personal tasks');let r=await sb.from('tasks').insert({household_id:householdId,owner_person_id:p.owner.id,owner_user_id:p.owner.user_id||null,title:p.title,description:'',area:p.area,status:'todo',due_date:p.due,repeat_rule:p.repeat,priority:'normal',monitoring:p.owner.id!==mePerson.id});if(r.error)notify(r.error.message);else{$('voiceInput').value='';$('voiceMessage').textContent='Task added: “'+p.title+'”';notify('✓ Task added');await loadData()}}
 function listen(){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return $('voiceMessage').textContent='Use your keyboard microphone.';let r=new SR();r.lang='en-GB';r.onresult=e=>{$('voiceInput').value=e.results[0][0].transcript;voiceRun()};r.onerror=()=>$('voiceMessage').textContent='Use your keyboard microphone.';r.start()}
 function showAuthForm(which){$('loginForm').className=which==='login'?'':'hidden';$('recoveryRequestForm').className=which==='request'?'':'hidden';$('newPasswordForm').className=which==='new'?'':'hidden';$('loginError').textContent='';$('loginSuccess').textContent='';$('recoveryError').textContent='';$('recoverySuccess').textContent='';$('newPasswordError').textContent='';$('newPasswordSuccess').textContent=''}
-async function login(e){e.preventDefault();$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in…';$('loginError').textContent='';$('loginSuccess').textContent='';try{let r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error){$('loginError').textContent=r.error.message;return}if(!r.data||!r.data.session){$('loginError').textContent='Sign-in succeeded but no session was returned.';return}if(!saveSession(r.data.session)){$('loginError').textContent='Your browser blocked OrganiseUs from saving the login. Site storage must be allowed.';return}$('loginSuccess').textContent='Signed in. Loading OrganiseUs…';await handleSession(r.data.session)}catch(err){$('loginError').textContent=err&&err.message?err.message:'Unable to sign in. Check your connection and try again.'}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Sign in'}}
+async function login(e){e.preventDefault();$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in…';$('loginError').textContent='';$('loginSuccess').textContent='';try{const r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error){$('loginError').textContent=r.error.message;return}if(!r.data||!r.data.session){$('loginError').textContent='Sign-in succeeded but no session was returned.';return}$('loginSuccess').textContent='Signed in. Loading OrganiseUs…';await handleSession(r.data.session)}catch(err){$('loginError').textContent=err&&err.message?err.message:'Unable to sign in. Check your connection and try again.'}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Sign in'}}
 async function requestRecovery(e){e.preventDefault();$('sendRecoveryBtn').disabled=true;$('recoveryError').textContent='';$('recoverySuccess').textContent='';let email=$('recoveryEmail').value.trim();let r=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://dh1-dev.github.io/organiseus/'});$('sendRecoveryBtn').disabled=false;if(r.error)$('recoveryError').textContent=r.error.message;else $('recoverySuccess').textContent='Recovery email sent. Open the link in the email on this phone.'}
 async function saveNewPassword(e){e.preventDefault();$('newPasswordError').textContent='';$('newPasswordSuccess').textContent='';let p=$('newPassword').value,c=$('confirmPassword').value;if(p!==c){$('newPasswordError').textContent='The passwords do not match.';return}if(p.length<8){$('newPasswordError').textContent='Use at least 8 characters.';return}$('savePasswordBtn').disabled=true;let r=await sb.auth.updateUser({password:p});$('savePasswordBtn').disabled=false;if(r.error){$('newPasswordError').textContent=r.error.message;return}$('newPasswordSuccess').textContent='Password changed. Signing you in…';history.replaceState({},document.title,location.pathname);setTimeout(()=>handleSession(r.data.user?{user:r.data.user}:null),700)}
 
-function setupPullToRefresh(){
-  let startY=0,pulling=false,distance=0,refreshing=false;
-  const indicator=$('pullRefresh');
-  function reset(){pulling=false;distance=0;if(!refreshing){indicator.className='pull-refresh';indicator.textContent='Pull to refresh'}}
-  window.addEventListener('touchstart',e=>{
-    if(refreshing||window.scrollY>0||!e.touches||e.touches.length!==1)return;
-    startY=e.touches[0].clientY;pulling=true;distance=0;
-  },{passive:true});
-  window.addEventListener('touchmove',e=>{
-    if(!pulling||refreshing||!e.touches||e.touches.length!==1)return;
-    distance=e.touches[0].clientY-startY;
-    if(distance<=0){reset();return}
-    // Stop Chrome/Android's native page reload and show our own refresh control.
-    e.preventDefault();
-    indicator.className='pull-refresh show';
-    indicator.textContent=distance>=75?'Release to refresh':'Pull to refresh';
-  },{passive:false});
-  window.addEventListener('touchend',async()=>{
-    if(!pulling||refreshing)return;
-    const shouldRefresh=distance>=75;
-    pulling=false;
-    if(!shouldRefresh){reset();return}
-    refreshing=true;
-    indicator.className='pull-refresh refreshing';
-    indicator.textContent='Refreshing…';
-    try{
-      if(user){
-        await loadData();
-        notify('✓ Refreshed');
-      }
-    }catch(err){
-      notify(err&&err.message?err.message:'Unable to refresh');
-    }finally{
-      indicator.textContent='Up to date ✓';
-      setTimeout(()=>{refreshing=false;reset()},650);
-    }
-  },{passive:true});
-  window.addEventListener('touchcancel',reset,{passive:true});
-}
 async function init(){
   const recovery=location.hash.includes('type=recovery')||location.search.includes('type=recovery');
   if(recovery){
@@ -361,15 +263,9 @@ async function init(){
     $('loginView').className='login';
     $('appView').className='hidden';
   }else{
-    const restored=await restoreSavedSession();
-    if(restored){
-      await handleSession(restored);
-    }else{
-      user=null;
-      $('loginView').className='login';
-      $('appView').className='hidden';
-      showAuthForm('login');
-    }
+    const {data,error}=await sb.auth.getSession();
+    if(error)console.error('Session restore failed',error);
+    await handleSession(data&&data.session?data.session:null);
   }
   sb.auth.onAuthStateChange((event,session)=>{
     if(event==='PASSWORD_RECOVERY'){
@@ -378,27 +274,18 @@ async function init(){
       $('appView').className='hidden';
       return;
     }
-    if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED')&&session){
-      saveSession(session);
-      return;
+    if(event==='SIGNED_IN'&&session&&!user){
+      setTimeout(()=>handleSession(session),0);
     }
-    if(event==='SIGNED_OUT'&&deliberateSignOut){
-      removeSession();
+    if(event==='SIGNED_OUT'){
       user=null;
       $('loginView').className='login';
       $('appView').className='hidden';
       showAuthForm('login');
     }
   });
-  setInterval(async()=>{
-    if(!user)return;
-    const saved=readSession();
-    if(!saved||!saved.expires_at)return;
-    const secondsLeft=saved.expires_at-Math.floor(Date.now()/1000);
-    if(secondsLeft<600)await refreshSavedSession();
-  },60000);
 }
-async function handleSession(session){if(!session){return}user=session.user;$('loginView').className='hidden';$('appView').className='';$('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});try{await loadData()}catch(e){console.error(e);notify(e.message||'OrganiseUs could not load your data');$('tabs').innerHTML='<div class="error" style="padding:10px">'+esc(e.message||'Unable to load data')+'</div>';}}
-$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=async()=>{deliberateSignOut=true;removeSession();await sb.auth.signOut();user=null;$('loginView').className='login';$('appView').className='hidden';showAuthForm('login')};$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator)navigator.serviceWorker.register('./service-worker.js');init();
+async function handleSession(session){if(!session){user=null;$('loginView').className='login';$('appView').className='hidden';showAuthForm('login');return}user=session.user;$('loginView').className='hidden';$('appView').className='';$('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});try{await loadData()}catch(e){console.error(e);notify(e.message||'OrganiseUs could not load your data');$('tabs').innerHTML='<div class="error" style="padding:10px">'+esc(e.message||'Unable to load data')+'</div>';}}
+$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=async()=>{await sb.auth.signOut();user=null;$('loginView').className='login';$('appView').className='hidden';showAuthForm('login')};$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}if('caches' in window){caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});}init();
 })();
 </script></body></html>
