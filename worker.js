@@ -58,36 +58,87 @@ async function supabaseAuth(path, { method = 'POST', body, accessToken } = {}) {
     'Content-Type': 'application/json',
   };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.msg || data.message || data.error_description || data.error || 'Authentication failed');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.msg || data.message || data.error_description || data.error || 'Authentication failed');
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    if (error && error.name === 'AbortError') throw new Error('Supabase authentication timed out');
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  return data;
+}
+
+function decodeJwtPayload(token) {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const normalised = part.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalised + '='.repeat((4 - normalised.length % 4) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch (_) {
+    return null;
+  }
+}
+
+function userFromClaims(claims) {
+  if (!claims || !claims.sub) return null;
+  return {
+    id: claims.sub,
+    aud: claims.aud || 'authenticated',
+    role: claims.role || 'authenticated',
+    email: claims.email || null,
+    phone: claims.phone || '',
+    app_metadata: claims.app_metadata || {},
+    user_metadata: claims.user_metadata || {},
+    is_anonymous: Boolean(claims.is_anonymous),
+  };
 }
 
 async function currentSession(request) {
   const cookies = parseCookies(request);
-  let accessToken = cookies[COOKIE_ACCESS];
-  let refreshToken = cookies[COOKIE_REFRESH];
-  let expiresAt = Number(cookies[COOKIE_EXPIRES] || 0);
+  const accessToken = cookies[COOKIE_ACCESS];
+  const refreshToken = cookies[COOKIE_REFRESH];
+  const cookieExpiresAt = Number(cookies[COOKIE_EXPIRES] || 0);
 
-  if (!refreshToken) throw new Error('No saved login');
-
-  // Reuse the access token until it is genuinely close to expiry.
-  if (accessToken && expiresAt > Math.floor(Date.now() / 1000) + 120) {
-    try {
-      const user = await supabaseAuth('user', { method: 'GET', accessToken });
-      return { access_token: accessToken, refresh_token: refreshToken, expires_at: expiresAt, user, rotated: false };
-    } catch (_) {
-      // Fall through to refresh.
-    }
+  if (!refreshToken) {
+    const error = new Error('No saved login');
+    error.status = 401;
+    throw error;
   }
 
+  const claims = accessToken ? decodeJwtPayload(accessToken) : null;
+  const tokenExpiresAt = Number(claims?.exp || cookieExpiresAt || 0);
+  const user = userFromClaims(claims);
+
+  // The JWT is signed by Supabase. If it is still valid, there is no reason to
+  // make another network request merely to rediscover the same user.
+  if (accessToken && user && tokenExpiresAt > Math.floor(Date.now() / 1000) + 120) {
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: tokenExpiresAt,
+      user,
+      rotated: false,
+    };
+  }
+
+  // Only contact Supabase when the access token genuinely needs replacing.
   const session = await supabaseAuth('token?grant_type=refresh_token', {
     body: { refresh_token: refreshToken },
   });
@@ -152,10 +203,10 @@ async function handleApi(request, env, url) {
 
     return json({ error: 'Not found' }, 404);
   } catch (error) {
-    const headers = new Headers();
-    // Clear only when session restoration failed, not for an incorrect password.
-    if (url.pathname === '/api/session') appendClearedCookies(headers);
-    return json({ error: error?.message || 'Authentication failed' }, 401, headers);
+    const status = Number(error?.status) || (url.pathname === '/api/session' ? 503 : 401);
+    // Never erase a saved login because of a temporary upstream or Worker error.
+    // Cookies are cleared only by the explicit /api/logout route.
+    return json({ error: error?.message || 'Authentication failed' }, status);
   }
 }
 
