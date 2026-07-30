@@ -60,7 +60,7 @@
 <div id="eventModal" class="modal hidden"><div class="box"><div class="head"><h2 id="eventModalTitle">Add event</h2><button id="closeEventModal">✕</button></div><form id="eventForm"><input id="eventId" type="hidden"><label class="field"><span>Title</span><input id="eventTitle" required maxlength="150"></label><label class="field"><span>Description</span><textarea id="eventDescription" rows="3"></textarea></label><div class="grid"><label class="field"><span>Date</span><input id="eventDate" type="date" required></label><label class="field"><span>Time (optional)</span><input id="eventTime" type="time"></label><label class="field"><span>Visibility</span><select id="eventVisibility"><option value="shared">Shared with household</option><option value="private">Only me</option></select></label></div><div class="modal-actions"><button type="button" id="deleteEvent" class="danger hidden">Delete</button><button type="button" id="cancelEvent">Cancel</button><button type="submit" class="primary">Save event</button></div></form></div></div>
 <div id="savedShoppingModal" class="modal hidden"><div class="box"><div class="head"><div><h2>Add shopping items</h2><div class="shopping-count">Search and select several saved items</div></div><button id="closeSavedShopping">✕</button></div><input id="savedShoppingSearch" class="saved-search" placeholder="Search saved items" autocomplete="off"><div id="savedShoppingList" class="saved-list"></div><div id="savedSelectedCount" class="selected-count">0 selected</div><section class="modal-new-item"><div class="saved-label">Add a new item</div><div class="shopping-add"><input id="newShoppingItem" maxlength="100" placeholder="e.g. Milk"><button id="addNewShopping" class="primary">Add</button></div><label class="save-option"><input id="saveShoppingItem" type="checkbox" checked> Save this item for next time</label></section><div class="modal-actions sticky"><button id="cancelSavedShopping">Cancel</button><button id="addSelectedShopping" class="primary">Add selected</button></div></div></div>
 <div id="confettiLayer" class="confetti-layer hidden" aria-hidden="true"></div><div id="toast" class="toast hidden"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js" onerror="document.getElementById('loginError').textContent='OrganiseUs could not load its secure sign-in service. Refresh the page while online.'; document.getElementById('loginBtn').disabled=true;"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
 if(!window.supabase || typeof window.supabase.createClient!=='function'){
@@ -72,17 +72,19 @@ if(!window.supabase || typeof window.supabase.createClient!=='function'){
 }
 const URL='https://meaakswalvliphlexqqd.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lYWFrc3dhbHZsaXBobGV4cXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDE5NzUsImV4cCI6MjEwMDkxNzk3NX0.TQulUFAumLl7V-9Rw6Tm5Vreyp2SyRA8BnYyIdZNyqU';
-let manualSignOut=false;
+// One-time migration from the custom key introduced by later builds back to
+// Supabase's original/default storage key used by the first working version.
+try{
+  const oldSession=localStorage.getItem('organiseus-auth-v1');
+  const defaultSessionKey='sb-meaakswalvliphlexqqd-auth-token';
+  if(oldSession&&!localStorage.getItem(defaultSessionKey)){
+    localStorage.setItem(defaultSessionKey,oldSession);
+  }
+}catch(_e){}
 
-// Use Supabase's built-in persistent session storage. It coordinates refresh
-// tokens safely across the browser tab and installed PWA for this origin.
-const sb=supabase.createClient(URL,KEY,{auth:{
-  persistSession:true,
-  autoRefreshToken:true,
-  detectSessionInUrl:true,
-  flowType:'pkce',
-  storageKey:'organiseus-auth-v1'
-}});
+// This is deliberately the exact auth configuration used by the first
+// OrganiseUs Supabase build, where page refresh correctly retained login.
+const sb=supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], mePerson=null, mode='me', meArea='personal', otherId=null, channel=null, selectedStatus='todo', screen='tasks', calendarView='today', calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1), selectedCalendarDate=new Date().toISOString().slice(0,10);
 let savedShoppingSelection=new Set();
 const $=id=>document.getElementById(id); const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
@@ -306,46 +308,28 @@ function setupPullToRefresh(){
 }
 async function init(){
   const recovery=location.hash.includes('type=recovery')||location.search.includes('type=recovery');
-  showAuthForm('login');
-  $('loginView').className='login';
-  $('appView').className='hidden';
-
-  // Wait for Supabase to restore its persisted session before deciding whether
-  // the login screen is needed. Do not clear a session merely because a reload
-  // is still initialising.
-  try{
-    const result=await sb.auth.getSession();
-    if(result.error) throw result.error;
-    if(result.data&&result.data.session){
-      await handleSession(result.data.session);
-    }else if(!recovery){
-      await handleSession(null);
-    }
-  }catch(e){
-    $('loginError').textContent=e&&e.message?e.message:'Unable to restore your login.';
-    if(!recovery) await handleSession(null);
+  const result=await sb.auth.getSession();
+  if(result.error){
+    $('loginError').textContent=result.error.message;
   }
-
-  sb.auth.onAuthStateChange((event,s)=>{
-    // Run UI/database work after the auth callback releases its internal lock.
-    setTimeout(async()=>{
-      if(event==='PASSWORD_RECOVERY'){
-        showAuthForm('new');
-        $('loginView').className='login';
-        $('appView').className='hidden';
-        return;
-      }
-      if((event==='INITIAL_SESSION'||event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED')&&s){
-        await handleSession(s);
-        return;
-      }
-      if(event==='SIGNED_OUT'&&manualSignOut){
-        await handleSession(null);
-      }
-    },0);
+  if(recovery){
+    showAuthForm('new');
+    $('loginView').className='login';
+    $('appView').className='hidden';
+  }else{
+    await handleSession(result.data.session);
+  }
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){
+      showAuthForm('new');
+      $('loginView').className='login';
+      $('appView').className='hidden';
+      return;
+    }
+    handleSession(session);
   });
 }
 async function handleSession(session){if(!session){user=null;$('loginView').className='login';$('appView').className='hidden';if(!$('newPasswordForm').classList.contains('hidden'))return;showAuthForm('login');return}user=session.user;$('loginView').className='hidden';$('appView').className='';$('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});try{await loadData()}catch(e){console.error(e);notify(e.message||'OrganiseUs could not load your data');$('tabs').innerHTML='<div class="error" style="padding:10px">'+esc(e.message||'Unable to load data')+'</div>';}}
-$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=async()=>{manualSignOut=true;try{await sb.auth.signOut({scope:'local'})}finally{await handleSession(null);setTimeout(()=>{manualSignOut=false},500)}};$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator)navigator.serviceWorker.register('./service-worker.js');setupPullToRefresh();init();
+$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=()=>sb.auth.signOut();$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator)navigator.serviceWorker.register('./service-worker.js');init();
 })();
 </script></body></html>

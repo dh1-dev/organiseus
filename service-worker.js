@@ -1,5 +1,12 @@
-const CACHE='organiseus-v20260730-inapp-pull-refresh';
-const FILES=['./','./index.html','./manifest.webmanifest?v=fullbleed4','./icon-full-192.png?v=4','./icon-full-512.png?v=4'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request,{cache:'no-store'}).then(r=>{let c=r.clone();caches.open(CACHE).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request)))});
+const CACHE='organiseus-v20260730-original-auth-restored';
+const FILES=['./','./index.html','./manifest.webmanifest?v=authrestore1','./icon-full-192.png?v=authrestore1','./icon-full-512.png?v=authrestore1'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{
+  if(event.request.method!=='GET')return;
+  event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
+    const copy=response.clone();
+    caches.open(CACHE).then(cache=>cache.put(event.request,copy));
+    return response;
+  }).catch(()=>caches.match(event.request)));
+});
