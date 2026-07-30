@@ -12,11 +12,11 @@
 @media(max-width:700px){.grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.toolbar input{min-width:100%}.toolbar button{flex:1}}
 </style>
 </head><body>
-<div id="loginView" class="login"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777">Stage 6</div>
+<div id="loginView" class="login"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777">Stage 7</div>
  <div class="login-card"><div class="login-brand"><svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8d8df"/><stop offset=".45" stop-color="#9c82c8"/><stop offset="1" stop-color="#5e3c96"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g1)"/><path d="M19 33.5l8 8L45 22.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>OrganiseUs</h1></div>
  <form id="loginForm"><label class="field"><span>Email</span><input id="email" type="email" required autocomplete="username"></label><label class="field"><span>Password</span><input id="password" type="password" required autocomplete="current-password"></label><button id="loginBtn" class="primary" style="width:100%;margin-top:14px">Sign in</button><div id="loginError" class="error"></div></form></div>
 </div>
-<div id="appView" class="hidden"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777;z-index:20">Stage 6</div>
+<div id="appView" class="hidden"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777;z-index:20">Stage 7</div>
 <header class="header"><div class="brand"><svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8d8df"/><stop offset=".45" stop-color="#9c82c8"/><stop offset="1" stop-color="#5e3c96"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g2)"/><path d="M19 33.5l8 8L45 22.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><h1>OrganiseUs</h1><small id="today"></small></div></div><div class="userbar"><span id="signedIn"></span><button id="signOut">Sign out</button></div></header>
 <main class="wrap"><div id="syncText" class="sync">Connecting…</div><div id="taskScreen"><div id="tabs" class="tabs"></div><div class="toolbar"><input id="search" placeholder="Search tasks"><button id="addBtn" class="primary">＋ Add task</button><button id="voiceBtn">🎙 Voice</button></div><div id="voicePanel" class="panel hidden"><b>Voice command</b><p id="voiceMessage">Type or dictate a command.</p><div class="voice-row"><input id="voiceInput" placeholder="Add a task for Sarah to book the dentist tomorrow"><button id="runVoice" class="primary">Run</button></div><div class="actions"><button id="listen">Start listening</button><button id="closeVoice">Close</button></div></div><div id="summary" class="summary"></div><div id="board" class="board"></div></div><div id="shoppingScreen" class="hidden"><div class="shopping-head"><div><h2>Shopping</h2><div id="shoppingCount" class="shopping-count"></div></div><button id="removeAllShopping" class="danger">Remove all</button></div><section class="panel"><button id="openSavedShopping" class="saved-picker-button">Choose or add items</button></section><div id="shoppingList" class="shopping-list"></div></div><div id="calendarScreen" class="hidden">
   <div class="calendar-head"><h2>Calendar</h2><button id="addEventBtn" class="primary">＋ Add event</button></div>
@@ -73,18 +73,90 @@ async function addNewShopping(){let name=$('newShoppingItem').value.trim();if(!n
 async function toggleShopping(id,checked){let r=await sb.from('shopping_list').update({checked}).eq('id',id);if(r.error)notify(r.error.message);else await loadData()}
 async function removeShoppingItem(id){let r=await sb.from('shopping_list').delete().eq('id',id);if(r.error)notify(r.error.message);else await loadData()}
 async function removeAllShopping(){if(!shoppingList.length||!confirm('Remove all items from the shopping list?'))return;let r=await sb.from('shopping_list').delete().eq('household_id',householdId);if(r.error)notify(r.error.message);else await loadData()}
-function card(t){let p=person(t.owner_person_id);return `<article class="card" data-id="${t.id}"><h3>${esc(t.title)}</h3>${t.description?`<div class="desc">${esc(t.description)}</div>`:''}<div class="chips">${mode==='others'?`<span class="chip">${esc(t.area)}</span>`:''}${p&&p.id!==mePerson.id?`<span class="chip">${esc(p.name)}</span>`:''}${t.due_date?`<span class="chip">Due ${fmt(t.due_date)}</span>`:''}${t.repeat_rule!=='none'?`<span class="chip">${t.repeat_rule}</span>`:''}</div><div class="actions"><button data-action="edit">Edit</button>${t.status!=='todo'?'<button data-action="todo">To do</button>':''}${t.status!=='progress'?'<button data-action="progress">In progress</button>':''}${t.status!=='done'?'<button data-action="done">Done</button>':''}</div></article>`}
+function card(t){let p=person(t.owner_person_id);return `<article class="card" data-id="${t.id}"><h3>${esc(t.title)}</h3>${t.description?`<div class="desc">${esc(t.description)}</div>`:''}<div class="chips">${mode==='others'?`<span class="chip">${esc(t.area)}</span>`:''}${p&&p.id!==mePerson.id?`<span class="chip">${esc(p.name)}</span>`:''}${t.due_date?`<span class="chip">Due ${fmt(t.due_date)}</span>`:''}${t.repeat_rule!=='none'?`<span class="chip">Repeats ${t.repeat_rule}</span>`:''}</div><div class="actions"><button data-action="edit">Edit</button>${t.status!=='todo'?'<button data-action="todo">To do</button>':''}${t.status!=='progress'?'<button data-action="progress">In progress</button>':''}${t.status!=='done'?'<button data-action="done">Done</button>':''}</div></article>`}
 async function loadData(){const m=await sb.from('household_members').select('household_id').eq('user_id',user.id).single();if(m.error)throw m.error;householdId=m.data.household_id;const [pp,tt,ev,sc,sl]=await Promise.all([sb.from('people').select('*').eq('household_id',householdId),sb.from('tasks').select('*').eq('household_id',householdId).order('created_at',{ascending:true}),sb.from('calendar_events').select('*').eq('household_id',householdId).order('event_date',{ascending:true}).order('event_time',{ascending:true}),sb.from('shopping_catalog').select('*').eq('household_id',householdId).order('name',{ascending:true}),sb.from('shopping_list').select('*').eq('household_id',householdId).order('name',{ascending:true})]);if(pp.error)throw pp.error;if(tt.error)throw tt.error;people=pp.data;tasks=tt.data;events=ev.error?[]:(ev.data||[]);shoppingItems=sc.error?[]:(sc.data||[]);shoppingList=sl.error?[]:(sl.data||[]);mePerson=people.find(p=>p.user_id===user.id);if(!mePerson)throw new Error('No person is linked to this login');let others=otherPeople();if(!otherId||!others.some(p=>p.id===otherId))otherId=others[0]?.id;$('syncText').textContent='Synced';render();subscribe()}
 function subscribe(){if(channel)sb.removeChannel(channel);channel=sb.channel('organiseus-'+householdId).on('postgres_changes',{event:'*',schema:'public',table:'tasks',filter:'household_id=eq.'+householdId},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'calendar_events',filter:'household_id=eq.'+householdId},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'shopping_catalog',filter:'household_id=eq.'+householdId},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'shopping_list',filter:'household_id=eq.'+householdId},()=>loadData()).subscribe()}
 function owners(selected){$('owner').innerHTML=people.map(p=>`<option value="${p.id}" ${p.id===selected?'selected':''}>${esc(p.name)}</option>`).join('')}
 function openTask(id){let t=tasks.find(x=>x.id===id),ownerId=t?t.owner_person_id:(mode==='others'?otherId:mePerson.id);$('modalTitle').textContent=t?'Edit task':'Add task';$('taskId').value=t?.id||'';$('title').value=t?.title||'';$('description').value=t?.description||'';$('area').value=t?.area||(mode==='me'?meArea:'personal');$('area').disabled=!t&&mode==='others';owners(ownerId);$('status').value=t?.status||'todo';$('due').value=t?.due_date||'';$('repeat').value=t?.repeat_rule||'none';$('priority').value=t?.priority||'normal';$('delete').className=t?'danger':'danger hidden';$('modal').className='modal'}
 function closeModal(){$('modal').className='modal hidden';$('area').disabled=false}
+
+function parseLocalDate(value){
+  if(!value)return null;
+  const parts=value.split('-').map(Number);
+  return new Date(parts[0],parts[1]-1,parts[2],12,0,0,0);
+}
+function localDateKey(date){
+  return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+}
+function daysInMonth(year,monthIndex){
+  return new Date(year,monthIndex+1,0).getDate();
+}
+function addRecurringInterval(date,rule){
+  const next=new Date(date);
+  if(rule==='daily'){
+    next.setDate(next.getDate()+1);
+  }else if(rule==='weekly'){
+    next.setDate(next.getDate()+7);
+  }else if(rule==='monthly'){
+    const originalDay=next.getDate();
+    const targetMonth=next.getMonth()+1;
+    const targetYear=next.getFullYear()+Math.floor(targetMonth/12);
+    const normalisedMonth=((targetMonth%12)+12)%12;
+    next.setFullYear(targetYear,normalisedMonth,Math.min(originalDay,daysInMonth(targetYear,normalisedMonth)));
+  }else if(rule==='yearly'){
+    const originalMonth=next.getMonth();
+    const originalDay=next.getDate();
+    const targetYear=next.getFullYear()+1;
+    next.setFullYear(targetYear,originalMonth,Math.min(originalDay,daysInMonth(targetYear,originalMonth)));
+  }
+  return next;
+}
+function nextRecurringDueDate(task){
+  if(!task||!task.repeat_rule||task.repeat_rule==='none')return null;
+  let date=parseLocalDate(task.due_date)||new Date();
+  date.setHours(12,0,0,0);
+  date=addRecurringInterval(date,task.repeat_rule);
+  const today=parseLocalDate(new Date().toISOString().slice(0,10));
+  while(date<today)date=addRecurringInterval(date,task.repeat_rule);
+  return localDateKey(date);
+}
+async function ensureNextOccurrence(task){
+  if(!task||!task.repeat_rule||task.repeat_rule==='none')return false;
+  const nextDue=nextRecurringDueDate(task);
+  if(!nextDue)return false;
+  const duplicate=tasks.some(t=>
+    t.id!==task.id &&
+    t.owner_person_id===task.owner_person_id &&
+    t.title===task.title &&
+    t.repeat_rule===task.repeat_rule &&
+    t.due_date===nextDue &&
+    t.status!=='done'
+  );
+  if(duplicate)return false;
+  const row={
+    household_id:task.household_id||householdId,
+    owner_person_id:task.owner_person_id,
+    owner_user_id:task.owner_user_id||null,
+    title:task.title,
+    description:task.description||'',
+    area:task.area,
+    status:'todo',
+    due_date:nextDue,
+    repeat_rule:task.repeat_rule,
+    priority:task.priority||'normal',
+    monitoring:Boolean(task.monitoring)
+  };
+  const result=await sb.from('tasks').insert(row);
+  if(result.error)throw result.error;
+  return true;
+}
+
 function celebrate(){let layer=$('confettiLayer');layer.innerHTML='';layer.className='confetti-layer';let colours=['#ff1493','#ff4db8','#ff7ad9','#d946ef','#a855f7','#7c3aed','#5b21b6','#00e5ff','#2dd4bf','#fde047','#ff7a00','#ff2d55','#38bdf8','#ffffff'];for(let i=0;i<150;i++){let piece=document.createElement('span'),silver=Math.random()<.18,shape=Math.random();piece.className='confetti-piece'+(silver?' shine':'')+(shape<.18?' circle':shape<.34?' ribbon':'');piece.style.left=(Math.random()*100)+'vw';if(!silver)piece.style.background=colours[Math.floor(Math.random()*colours.length)];piece.style.setProperty('--x0',((Math.random()-.5)*24)+'vw');piece.style.setProperty('--x1',((Math.random()-.5)*58)+'vw');piece.style.setProperty('--rot',(900+Math.random()*1600)+'deg');piece.style.setProperty('--dur',(1.7+Math.random()*1.45)+'s');piece.style.setProperty('--spin',(.22+Math.random()*.45)+'s');piece.style.animationDelay=(Math.random()*.32)+'s';piece.style.width=(6+Math.random()*10)+'px';piece.style.height=(shape<.18?(6+Math.random()*8):(10+Math.random()*17))+'px';layer.appendChild(piece)}let msg=document.createElement('div');msg.className='confetti-burst';msg.textContent='Nice one! ✓';layer.appendChild(msg);setTimeout(()=>{layer.className='confetti-layer hidden';layer.innerHTML=''},2900)}
-async function saveTask(e){e.preventDefault();let id=$('taskId').value,previous=id?tasks.find(x=>x.id===id):null,owner=person($('owner').value),area=$('area').value;if(mode==='others'&&area==='work'){notify('Other people can only be given personal tasks');return}if(area==='work'&&owner.user_id!==user.id){notify('Work tasks can only be assigned to yourself');return}if(owner.name==='Milo'&&area==='work'){notify('Milo only has personal tasks');return}let row={household_id:householdId,owner_person_id:owner.id,owner_user_id:owner.user_id||null,title:$('title').value.trim(),description:$('description').value.trim(),area,status:$('status').value,due_date:$('due').value||null,repeat_rule:$('repeat').value,priority:$('priority').value,monitoring:owner.id!==mePerson.id};let r=id?await sb.from('tasks').update(row).eq('id',id):await sb.from('tasks').insert(row);if(r.error){notify(r.error.message);return}closeModal();if($('status').value==='done'&&(!previous||previous.status!=='done'))celebrate();notify(id?'✓ Task updated':'✓ Task added');await loadData()}
-async function updateStatus(id,status){let before=tasks.find(x=>x.id===id);let r=await sb.from('tasks').update({status}).eq('id',id);if(r.error)notify(r.error.message);else{if(status==='done'&&before&&before.status!=='done')celebrate();notify('Task updated');await loadData()}}
+async function saveTask(e){e.preventDefault();let id=$('taskId').value,previous=id?tasks.find(x=>x.id===id):null,owner=person($('owner').value),area=$('area').value;if(mode==='others'&&area==='work'){notify('Other people can only be given personal tasks');return}if(area==='work'&&owner.user_id!==user.id){notify('Work tasks can only be assigned to yourself');return}if(owner.name==='Milo'&&area==='work'){notify('Milo only has personal tasks');return}let row={household_id:householdId,owner_person_id:owner.id,owner_user_id:owner.user_id||null,title:$('title').value.trim(),description:$('description').value.trim(),area,status:$('status').value,due_date:$('due').value||null,repeat_rule:$('repeat').value,priority:$('priority').value,monitoring:owner.id!==mePerson.id};let r=id?await sb.from('tasks').update(row).eq('id',id):await sb.from('tasks').insert(row);if(r.error){notify(r.error.message);return}closeModal();if(row.status==='done'&&(!previous||previous.status!=='done')){try{await ensureNextOccurrence({...previous,...row,id:id||undefined})}catch(err){notify('Task completed, but the next repeat could not be created: '+err.message);await loadData();return}celebrate()}notify(id?'✓ Task updated':'✓ Task added');await loadData()}
+async function updateStatus(id,status){let before=tasks.find(x=>x.id===id);let r=await sb.from('tasks').update({status}).eq('id',id);if(r.error)notify(r.error.message);else{if(status==='done'&&before&&before.status!=='done'){try{let created=await ensureNextOccurrence(before);celebrate();notify(created?'✓ Completed — next repeat added':'✓ Completed')}catch(err){notify('Completed, but the next repeat could not be created: '+err.message)}}else notify('Task updated');await loadData()}}
 async function removeTask(){if(!confirm('Delete this task?'))return;let r=await sb.from('tasks').delete().eq('id',$('taskId').value);if(r.error)notify(r.error.message);else{closeModal();notify('Task deleted');await loadData()}}
 function parseCommand(raw){let t=raw.trim().replace(/[.!?]+$/,'');let low=t.toLowerCase(),area=/\bwork\b/.test(low)?'work':'personal',due=null,repeat='none',owner=mePerson;if(/\btomorrow\b/.test(low)){let d=new Date();d.setDate(d.getDate()+1);due=d.toISOString().slice(0,10)}else if(/\btoday\b/.test(low))due=new Date().toISOString().slice(0,10);if(/daily|every day/.test(low))repeat='daily';else if(/weekly|every week/.test(low))repeat='weekly';else if(/monthly|every month/.test(low))repeat='monthly';else if(/yearly|annually|every year/.test(low))repeat='yearly';let pm=t.match(/\bfor\s+([A-Za-z][A-Za-z' -]*?)(?=\s+to\s+|\s+(today|tomorrow|every|daily|weekly|monthly|yearly|annually)\b|$)/i);if(pm){let found=people.find(p=>p.name.toLowerCase()===pm[1].trim().toLowerCase());if(!found)return {unknown:pm[1].trim()};owner=found}let title=t.replace(/^\s*(please\s+)?(add|create|make)\s+(me\s+)?(a\s+)?/i,'').replace(/^\s*(personal|work)\s+/i,'').replace(/^\s*task\s+(to\s+)?/i,'').replace(/^\s*remind me to\s+/i,'').replace(/\bfor\s+[A-Za-z][A-Za-z' -]*?\s+to\s+/i,'').replace(/\b(today|tomorrow|every day|daily|every week|weekly|every month|monthly|every year|yearly|annually)\b/ig,'').replace(/^\s*(a\s+)?(personal|work)\s+task\s+(to\s+)?/i,'').replace(/\s+/g,' ').trim();return {title:title.charAt(0).toUpperCase()+title.slice(1),area,due,repeat,owner}}
-async function voiceRun(){let raw=$('voiceInput').value.trim();if(!raw)return notify('Type or dictate a command');let done=raw.match(/(.+?)\s+(is|are)?\s*(now)?\s*done$/i);if(done){let names=done[1].split(/\s+and\s+|,/),hits=[];for(const n of names){let t=tasks.find(x=>x.status!=='done'&&x.title.toLowerCase().includes(n.trim().toLowerCase()));if(t){await sb.from('tasks').update({status:'done'}).eq('id',t.id);hits.push(t.title)}}if(hits.length){$('voiceInput').value='';$('voiceMessage').textContent='Completed: '+hits.join(', ');celebrate();notify('✓ Completed');await loadData()}else notify('No matching task');return}if(!/^(please\s+)?(add|create|make)\b/i.test(raw)&&!/^remind me to\b/i.test(raw))return notify('Command not understood');let p=parseCommand(raw);if(p.unknown)return notify(p.unknown+' is not in your People list');if(!p.title)return notify('Task title not recognised');if(p.area==='work'&&p.owner.user_id!==user.id)return notify('Work tasks can only be for yourself');if(p.area==='work'&&p.owner.name==='Milo')return notify('Milo only has personal tasks');let r=await sb.from('tasks').insert({household_id:householdId,owner_person_id:p.owner.id,owner_user_id:p.owner.user_id||null,title:p.title,description:'',area:p.area,status:'todo',due_date:p.due,repeat_rule:p.repeat,priority:'normal',monitoring:p.owner.id!==mePerson.id});if(r.error)notify(r.error.message);else{$('voiceInput').value='';$('voiceMessage').textContent='Task added: “'+p.title+'”';notify('✓ Task added');await loadData()}}
+async function voiceRun(){let raw=$('voiceInput').value.trim();if(!raw)return notify('Type or dictate a command');let done=raw.match(/(.+?)\s+(is|are)?\s*(now)?\s*done$/i);if(done){let names=done[1].split(/\s+and\s+|,/),hits=[];for(const n of names){let t=tasks.find(x=>x.status!=='done'&&x.title.toLowerCase().includes(n.trim().toLowerCase()));if(t){let result=await sb.from('tasks').update({status:'done'}).eq('id',t.id);if(!result.error){try{await ensureNextOccurrence(t)}catch(err){console.error('Could not create next repeating task',err)}hits.push(t.title)}}}if(hits.length){$('voiceInput').value='';$('voiceMessage').textContent='Completed: '+hits.join(', ');celebrate();notify('✓ Completed');await loadData()}else notify('No matching task');return}if(!/^(please\s+)?(add|create|make)\b/i.test(raw)&&!/^remind me to\b/i.test(raw))return notify('Command not understood');let p=parseCommand(raw);if(p.unknown)return notify(p.unknown+' is not in your People list');if(!p.title)return notify('Task title not recognised');if(p.area==='work'&&p.owner.user_id!==user.id)return notify('Work tasks can only be for yourself');if(p.area==='work'&&p.owner.name==='Milo')return notify('Milo only has personal tasks');let r=await sb.from('tasks').insert({household_id:householdId,owner_person_id:p.owner.id,owner_user_id:p.owner.user_id||null,title:p.title,description:'',area:p.area,status:'todo',due_date:p.due,repeat_rule:p.repeat,priority:'normal',monitoring:p.owner.id!==mePerson.id});if(r.error)notify(r.error.message);else{$('voiceInput').value='';$('voiceMessage').textContent='Task added: “'+p.title+'”';notify('✓ Task added');await loadData()}}
 function listen(){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return $('voiceMessage').textContent='Use your keyboard microphone.';let r=new SR();r.lang='en-GB';r.onresult=e=>{$('voiceInput').value=e.results[0][0].transcript;voiceRun()};r.onerror=()=>$('voiceMessage').textContent='Use your keyboard microphone.';r.start()}
 async function login(e){e.preventDefault();$('loginBtn').disabled=true;$('loginError').textContent='';let r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('loginBtn').disabled=false;if(r.error)$('loginError').textContent=r.error.message}
 async function init(){let {data:{session}}=await sb.auth.getSession();handleSession(session);sb.auth.onAuthStateChange((_e,s)=>handleSession(s))}
