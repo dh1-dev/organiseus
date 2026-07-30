@@ -1,4 +1,4 @@
-const CACHE_NAME='organiseus-stable-v1';
+const CACHE_NAME='organiseus-stable-v1.3';
 const APP_SHELL=[
   './',
   './index.html',
@@ -56,6 +56,40 @@ self.addEventListener('fetch',event=>{
         return response;
       }).catch(()=>cached);
       return cached||network;
+    })
+  );
+});
+
+
+self.addEventListener('push',event=>{
+  let data={};
+  try{data=event.data?event.data.json():{}}catch(_e){data={body:event.data?.text()||'You have a new task'}}
+
+  const title=data.title||'New OrganiseUs task';
+  const options={
+    body:data.body||'A personal task has been assigned to you.',
+    icon:'./icon-192.png',
+    badge:'./icon-192.png',
+    tag:data.tag||'organiseus-task-assignment',
+    renotify:true,
+    data:{url:data.url||'./'}
+  };
+
+  event.waitUntil(self.registration.showNotification(title,options));
+});
+
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  const target=new URL(event.notification.data?.url||'./',self.location.origin).href;
+  event.waitUntil(
+    clients.matchAll({type:'window',includeUncontrolled:true}).then(openClients=>{
+      for(const client of openClients){
+        if('focus' in client){
+          client.navigate(target);
+          return client.focus();
+        }
+      }
+      return clients.openWindow?clients.openWindow(target):undefined;
     })
   );
 });
