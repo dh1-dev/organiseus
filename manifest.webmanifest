@@ -1,1 +1,1 @@
-{"name":"OrganiseUs","short_name":"OrganiseUs","start_url":"./","display":"standalone","background_color":"#f2f1f5","theme_color":"#6d4bb8","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}]}
+{"name":"OrganiseUs","short_name":"OrganiseUs","start_url":"./","display":"standalone","background_color":"#f2f1f5","theme_color":"#6d4bb8","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}],"id":"./"}
