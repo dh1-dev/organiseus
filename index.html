@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>OrganiseUs</title><link rel="manifest" href="manifest.webmanifest?v=cachefix2"><meta name="theme-color" content="#6d4bb8"><link rel="apple-touch-icon" href="icon-full-192.png?v=cachefix2">
+<title>OrganiseUs</title><link rel="manifest" href="manifest.webmanifest?v=worker1"><meta name="theme-color" content="#6d4bb8"><link rel="apple-touch-icon" href="icon-full-192.png?v=worker1">
 <style>
 :root{font-family:Arial,sans-serif;color:#251f2d;background:#f2f1f5;--purple:#6d4bb8;--purple-dark:#4d337f;--purple-soft:#eee8f8;--silver:#c9c9d2;--silver-dark:#8b8995;--panel:#fbfaff}*{box-sizing:border-box}body{overscroll-behavior-y:none;margin:0}.hidden{display:none!important}button,input,select,textarea{font:inherit}button{border:1px solid #ccd1d7;background:#fff;border-radius:10px;padding:10px 13px}.primary{background:linear-gradient(135deg,#8f73c7,#5b3d98);color:#fff;border-color:#5b3d98}.danger{background:#fff0f0;color:#9a1717}.header{position:sticky;top:0;background:linear-gradient(90deg,#fbfaff,#eeeaf4);padding:11px 14px;border-bottom:1px solid #ddd;z-index:5;display:flex;justify-content:space-between;align-items:center}.brand{display:flex;align-items:center;gap:9px}.logo{width:34px;height:34px}.brand h1{font-size:20px;margin:0}.brand small{display:block;color:#667;font-size:12px}.wrap{padding:13px 13px 92px;max-width:1050px;margin:auto}.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:7px;background:#dddbe3;padding:5px;border-radius:13px;margin-bottom:10px}.tabs button{border:0;background:transparent;font-weight:700}.tabs button.active{background:linear-gradient(135deg,#7e60b8,#5c3d96);color:#fff;box-shadow:0 2px 6px #4d337f33}.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:15;background:linear-gradient(90deg,#f9f8fb,#eceaf0);border-top:1px solid #dfe3e8;padding:7px max(12px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.nav-btn{border:0;background:transparent;border-radius:12px;padding:7px 8px 5px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#6a7079;font-size:10px;font-weight:700}.nav-btn svg{width:25px;height:25px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.nav-btn.active{background:#e9e1f5;color:#65449f}.nav-btn.disabled{opacity:.35;cursor:not-allowed}.toolbar{display:flex;gap:7px;margin-bottom:11px}.toolbar input{flex:1;min-width:0}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.sum{background:#fff;border:1px solid #e0e3e7;border-radius:12px;padding:11px;text-align:left;cursor:pointer}.sum.active{background:linear-gradient(135deg,#8d70c3,#5a3b91);color:#fff;border-color:#5a3b91;box-shadow:0 2px 7px #0002}.sum b{font-size:21px;display:block}.sum span{font-size:11px;color:#667}.sum.active span{color:#d7dbe1}.board{display:block}.column{background:#e6e4e9;border-radius:13px;padding:12px;min-height:180px;width:100%}.column h2{font-size:14px;margin:3px}.card{background:#fff;border:1px solid #dfe3e8;border-radius:11px;padding:10px;margin:8px 0}.card h3{font-size:15px;margin:0 0 6px}.desc{font-size:13px;color:#59606a}.chips,.actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.chip{font-size:11px;background:#eef1f4;padding:4px 6px;border-radius:999px}.actions button{font-size:12px;padding:6px 8px}.empty{color:#777;font-size:13px;padding:8px}.panel{background:var(--panel);border:1px solid #dfe3e8;border-radius:12px;padding:12px;margin-bottom:11px}.voice-row{display:flex;gap:8px}.voice-row input{flex:1}.modal{position:fixed;inset:0;background:#0008;z-index:20;padding:12px;overflow:auto}.box{background:#fff;max-width:650px;margin:25px auto;border-radius:15px;padding:15px}.head{display:flex;justify-content:space-between;align-items:center}.head h2{margin:0}.field{display:block;margin-top:10px}.field span{font-size:12px;color:#555;display:block;margin-bottom:4px}input,select,textarea{width:100%;padding:10px;border:1px solid #cfd5dc;border-radius:9px;background:#fff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 14px;border-radius:9px;z-index:40}.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:#f4f6f8}.login-card{width:min(420px,100%);background:#fff;border:1px solid #ddd;border-radius:18px;padding:20px}.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}.linkbtn{border:0;background:transparent;color:#315fd1;padding:9px 0;text-decoration:underline}.login-note{font-size:13px;color:#667;line-height:1.4;margin-top:10px}.success{color:#18733b;font-size:13px;margin-top:9px}.login-brand h1{margin:0}.error{color:#a51616;font-size:13px;margin-top:9px}.userbar{display:flex;align-items:center;gap:8px}.userbar button{padding:6px 9px;font-size:12px}.shopping-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.shopping-head h2{margin:0;font-size:22px}.shopping-add{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px}.shopping-add select,.shopping-add input{min-width:0}.save-option{display:flex;align-items:center;gap:8px;font-size:13px;color:#555;margin:8px 0 12px}.save-option input{width:auto}.shopping-list{display:grid;gap:8px}.shopping-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:#fff;border:1px solid #dfe3e8;border-radius:12px;padding:11px}.shopping-row input{width:21px;height:21px}.shopping-row.checked .shopping-name{text-decoration:line-through;color:#858b94}.icon-button{padding:7px 9px;line-height:1}.saved-label{font-size:12px;color:#667;margin:2px 0 6px}.shopping-empty{background:#e9edf1;border-radius:13px;padding:22px;text-align:center;color:#777}.shopping-count{font-size:13px;color:#667;margin-top:3px}.saved-picker-button{width:100%;display:flex;justify-content:flex-start;align-items:center;text-align:left;font-weight:600}.modal-new-item{margin-top:12px;padding:12px;border:1px solid #dfe3e8;border-radius:12px;background:#f7f8fa}.modal-new-item .saved-label{margin-top:0}.saved-search{margin:12px 0}.saved-list{display:grid;gap:7px;max-height:52vh;overflow:auto}.saved-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;border:1px solid #dfe3e8;border-radius:11px;padding:10px}.saved-item input{width:21px;height:21px}.saved-item-name{min-width:0}.saved-delete{padding:7px 9px;color:#9a1717}.selected-count{font-size:13px;color:#667;margin-top:8px}.modal-actions.sticky{position:sticky;bottom:-15px;background:#fff;padding-top:12px;padding-bottom:2px}
 
@@ -15,13 +15,13 @@
 @media(max-width:700px){.grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.toolbar input{min-width:100%}.toolbar button{flex:1}}
 </style>
 </head><body><div id="pullRefresh" class="pull-refresh" role="status" aria-live="polite">Pull to refresh</div>
-<div id="loginView" class="login"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777;z-index:9999">Build cachefix2</div>
+<div id="loginView" class="login"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777;z-index:9999">Worker build 1</div>
  <div class="login-card"><div class="login-brand"><svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8d8df"/><stop offset=".45" stop-color="#9c82c8"/><stop offset="1" stop-color="#5e3c96"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g1)"/><path d="M19 33.5l8 8L45 22.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>OrganiseUs</h1></div>
  <form id="loginForm"><label class="field"><span>Email</span><input id="email" type="email" required autocomplete="username"></label><label class="field"><span>Password</span><input id="password" type="password" required autocomplete="current-password"></label><button id="loginBtn" class="primary" style="width:100%;margin-top:14px">Sign in</button><button id="forgotBtn" class="linkbtn" type="button" style="width:100%">Forgot password?</button><div id="loginError" class="error"></div><div id="loginSuccess" class="success"></div></form>
  <form id="recoveryRequestForm" class="hidden"><h2>Reset password</h2><p class="login-note">Enter your email and OrganiseUs will send a recovery link. The link will return you here to choose a new password.</p><label class="field"><span>Email</span><input id="recoveryEmail" type="email" required autocomplete="email"></label><button id="sendRecoveryBtn" class="primary" style="width:100%;margin-top:14px">Send recovery email</button><button id="backToLoginBtn" class="linkbtn" type="button" style="width:100%">Back to sign in</button><div id="recoveryError" class="error"></div><div id="recoverySuccess" class="success"></div></form>
  <form id="newPasswordForm" class="hidden"><h2>Choose a new password</h2><p class="login-note">Enter the new password you want to use for OrganiseUs.</p><label class="field"><span>New password</span><input id="newPassword" type="password" required minlength="8" autocomplete="new-password"></label><label class="field"><span>Confirm new password</span><input id="confirmPassword" type="password" required minlength="8" autocomplete="new-password"></label><button id="savePasswordBtn" class="primary" style="width:100%;margin-top:14px">Save new password</button><div id="newPasswordError" class="error"></div><div id="newPasswordSuccess" class="success"></div></form></div>
 </div>
-<div id="appView" class="hidden"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777;z-index:9999">Build cachefix2</div>
+<div id="appView" class="hidden"><div style="position:fixed;top:6px;right:8px;font-size:10px;color:#777;z-index:9999">Worker build 1</div>
 <header class="header"><div class="brand"><svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8d8df"/><stop offset=".45" stop-color="#9c82c8"/><stop offset="1" stop-color="#5e3c96"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g2)"/><path d="M19 33.5l8 8L45 22.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><h1>OrganiseUs</h1><small id="today"></small></div></div><div class="userbar"><button id="signOut">Sign out</button></div></header>
 <main class="wrap">
 <div id="taskScreen"><div id="tabs" class="tabs"></div><div class="toolbar"><input id="search" placeholder="Search tasks"><button id="addBtn" class="primary">＋ Add task</button><button id="voiceBtn">🎙 Voice</button></div><div id="voicePanel" class="panel hidden"><b>Voice command</b><p id="voiceMessage">Type or dictate a command.</p><div class="voice-row"><input id="voiceInput" placeholder="Add a task for Sarah to book the dentist tomorrow"><button id="runVoice" class="primary">Run</button></div><div class="actions"><button id="listen">Start listening</button><button id="closeVoice">Close</button></div></div><div id="summary" class="summary"></div><div id="board" class="board"></div></div>
@@ -72,63 +72,53 @@ if(!window.supabase || typeof window.supabase.createClient!=='function'){
 }
 const URL='https://meaakswalvliphlexqqd.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lYWFrc3dhbHZsaXBobGV4cXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDE5NzUsImV4cCI6MjEwMDkxNzk3NX0.TQulUFAumLl7V-9Rw6Tm5Vreyp2SyRA8BnYyIdZNyqU';
-// Authentication is handled directly through Supabase Auth's HTTP API.
-// This avoids the browser auth client's cross-tab refresh-token race.
-const SESSION_KEY='organiseus-direct-session-v1';
-let sb=null, refreshTimer=null;
-function saveSession(session){
-  try{
-    if(!session||!session.access_token||!session.refresh_token||!session.user) return false;
-    const expiresAt=session.expires_at || Math.floor(Date.now()/1000)+(session.expires_in||3600);
-    localStorage.setItem(SESSION_KEY,JSON.stringify({...session,expires_at:expiresAt}));
-    return !!localStorage.getItem(SESSION_KEY);
-  }catch(err){console.error('Session save failed',err);return false}
-}
-function readSession(){
-  try{const raw=localStorage.getItem(SESSION_KEY);return raw?JSON.parse(raw):null}catch(err){console.error('Session read failed',err);return null}
-}
-function removeSession(){try{localStorage.removeItem(SESSION_KEY)}catch(_e){}}
-async function authRequest(path,body,accessToken){
-  const headers={'apikey':KEY,'Content-Type':'application/json'};
-  if(accessToken)headers.Authorization='Bearer '+accessToken;
-  const response=await fetch(URL+'/auth/v1/'+path,{method:'POST',headers,body:JSON.stringify(body||{})});
+let sb=null,sessionTimer=null;
+
+async function workerApi(path,options={}){
+  const response=await fetch('/api/'+path,{
+    method:options.method||'GET',
+    credentials:'same-origin',
+    headers:{'Content-Type':'application/json',...(options.headers||{})},
+    body:options.body===undefined?undefined:JSON.stringify(options.body),
+    cache:'no-store'
+  });
   const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.msg||data.message||data.error_description||data.error||'Authentication failed');
+  if(!response.ok)throw new Error(data.error||data.message||'Request failed');
   return data;
 }
-async function refreshStoredSession(saved){
-  const data=await authRequest('token?grant_type=refresh_token',{refresh_token:saved.refresh_token});
-  if(!saveSession(data))throw new Error('The refreshed login could not be saved');
-  return readSession();
-}
+
 function createDataClient(session){
+  if(!session||!session.access_token||!session.user)throw new Error('No valid session returned');
   if(sb&&sb.removeAllChannels)try{sb.removeAllChannels()}catch(_e){}
-  sb=supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},global:{headers:{Authorization:'Bearer '+session.access_token}}});
+  sb=supabase.createClient(URL,KEY,{
+    auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+    global:{headers:{Authorization:'Bearer '+session.access_token}}
+  });
   if(sb.realtime&&sb.realtime.setAuth)sb.realtime.setAuth(session.access_token);
-  scheduleRefresh(session);
-}
-function scheduleRefresh(session){
-  clearTimeout(refreshTimer);
+  clearTimeout(sessionTimer);
   const expiresAt=session.expires_at||Math.floor(Date.now()/1000)+3600;
   const wait=Math.max(30000,(expiresAt*1000-Date.now())-120000);
-  refreshTimer=setTimeout(async()=>{
+  sessionTimer=setTimeout(async()=>{
     try{
-      const current=readSession();if(!current)return;
-      const fresh=await refreshStoredSession(current);createDataClient(fresh);
-      if(user){user=fresh.user;await loadData()}
-    }catch(err){console.error('Background token refresh failed',err)}
+      const fresh=await workerApi('session');
+      createDataClient(fresh);
+      user=fresh.user;
+    }catch(err){
+      console.error('Session renewal failed',err);
+      showSignedOut();
+    }
   },wait);
 }
-async function restoreSavedSession(){
-  let saved=readSession();
-  if(!saved||!saved.access_token||!saved.refresh_token||!saved.user)return null;
-  // Reuse a still-valid access token. Do not rotate the refresh token on every tab load.
-  if((saved.expires_at||0)<=Math.floor(Date.now()/1000)+30){
-    try{saved=await refreshStoredSession(saved)}catch(err){console.error('Session refresh failed',err);removeSession();return null}
-  }
-  createDataClient(saved);
-  return saved;
+
+function showSignedOut(){
+  clearTimeout(sessionTimer);
+  user=null;
+  if(channel&&sb)try{sb.removeChannel(channel)}catch(_e){}
+  $('loginView').className='login';
+  $('appView').className='hidden';
+  showAuthForm('login');
 }
+
 let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], mePerson=null, mode='me', meArea='personal', otherId=null, channel=null, selectedStatus='todo', screen='tasks', calendarView='today', calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1), selectedCalendarDate=new Date().toISOString().slice(0,10);
 let savedShoppingSelection=new Set();
 const $=id=>document.getElementById(id); const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
@@ -308,24 +298,39 @@ async function voiceRun(){let raw=$('voiceInput').value.trim();if(!raw)return no
 function listen(){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return $('voiceMessage').textContent='Use your keyboard microphone.';let r=new SR();r.lang='en-GB';r.onresult=e=>{$('voiceInput').value=e.results[0][0].transcript;voiceRun()};r.onerror=()=>$('voiceMessage').textContent='Use your keyboard microphone.';r.start()}
 function showAuthForm(which){$('loginForm').className=which==='login'?'':'hidden';$('recoveryRequestForm').className=which==='request'?'':'hidden';$('newPasswordForm').className=which==='new'?'':'hidden';$('loginError').textContent='';$('loginSuccess').textContent='';$('recoveryError').textContent='';$('recoverySuccess').textContent='';$('newPasswordError').textContent='';$('newPasswordSuccess').textContent=''}
 async function login(e){
-  e.preventDefault();$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in…';$('loginError').textContent='';$('loginSuccess').textContent='';
+  e.preventDefault();
+  $('loginBtn').disabled=true;
+  $('loginBtn').textContent='Signing in…';
+  $('loginError').textContent='';
+  $('loginSuccess').textContent='';
   try{
-    const session=await authRequest('token?grant_type=password',{email:$('email').value.trim(),password:$('password').value});
-    if(!saveSession(session)){ $('loginError').textContent='Chrome did not save the OrganiseUs login.'; return }
-    createDataClient(readSession());
+    const session=await workerApi('login',{
+      method:'POST',
+      body:{email:$('email').value.trim(),password:$('password').value}
+    });
+    createDataClient(session);
     $('loginSuccess').textContent='Signed in. Loading OrganiseUs…';
-    await handleSession(readSession());
-  }catch(err){$('loginError').textContent=err&&err.message?err.message:'Unable to sign in.'}
-  finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Sign in'}
+    await handleSession(session);
+  }catch(err){
+    $('loginError').textContent=err&&err.message?err.message:'Unable to sign in.';
+  }finally{
+    $('loginBtn').disabled=false;
+    $('loginBtn').textContent='Sign in';
+  }
 }
 async function requestRecovery(e){
-  e.preventDefault();$('sendRecoveryBtn').disabled=true;$('recoveryError').textContent='';$('recoverySuccess').textContent='';
+  e.preventDefault();
+  $('sendRecoveryBtn').disabled=true;
+  $('recoveryError').textContent='';
+  $('recoverySuccess').textContent='';
   try{
-    const redirect=encodeURIComponent('https://dh1-dev.github.io/organiseus/');
-    await authRequest('recover?redirect_to='+redirect,{email:$('recoveryEmail').value.trim()});
+    await workerApi('recover',{method:'POST',body:{email:$('recoveryEmail').value.trim()}});
     $('recoverySuccess').textContent='Recovery email sent. Open the link in the email on this phone.';
-  }catch(err){$('recoveryError').textContent=err.message}
-  finally{$('sendRecoveryBtn').disabled=false}
+  }catch(err){
+    $('recoveryError').textContent=err.message;
+  }finally{
+    $('sendRecoveryBtn').disabled=false;
+  }
 }
 async function saveNewPassword(e){
   e.preventDefault();$('newPasswordError').textContent='';$('newPasswordSuccess').textContent='';
@@ -391,27 +396,23 @@ async function init(){
     showAuthForm('new');
     $('loginView').className='login';
     $('appView').className='hidden';
-  }else{
-    const restored=await restoreSavedSession();
-    if(restored){
-      await handleSession(restored);
-    }else{
-      user=null;
-      $('loginView').className='login';
-      $('appView').className='hidden';
-      showAuthForm('login');
-    }
+    return;
   }
-  setInterval(async()=>{
-    if(!user)return;
-    const saved=readSession();
-    if(!saved||!saved.expires_at)return;
-    const secondsLeft=saved.expires_at-Math.floor(Date.now()/1000);
-    if(secondsLeft<600)await refreshSavedSession();
-  },60000);
+  try{
+    const session=await workerApi('session');
+    createDataClient(session);
+    await handleSession(session);
+  }catch(err){
+    console.log('No active OrganiseUs session',err.message);
+    showSignedOut();
+  }
 }
 async function handleSession(session){if(!session){return}user=session.user;$('loginView').className='hidden';$('appView').className='';$('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});try{await loadData()}catch(e){console.error(e);notify(e.message||'OrganiseUs could not load your data');$('tabs').innerHTML='<div class="error" style="padding:10px">'+esc(e.message||'Unable to load data')+'</div>';}}
-$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=async()=>{removeSession();clearTimeout(refreshTimer);if(channel&&sb)try{sb.removeChannel(channel)}catch(_e){};user=null;$('loginView').className='login';$('appView').className='hidden';showAuthForm('login')};$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;(async()=>{
+$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=async()=>{
+  try{await workerApi('logout',{method:'POST',body:{}})}catch(_e){}
+  showSignedOut();
+};
+$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;(async()=>{
   try{
     if('serviceWorker' in navigator){
       const regs=await navigator.serviceWorker.getRegistrations();
