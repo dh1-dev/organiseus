@@ -162,6 +162,41 @@ async function handleApi(request, env, url) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === '/vendor/supabase.js') {
+      const cache = caches.default;
+      const cacheKey = new Request('https://organiseus.internal/vendor/supabase-js-v2');
+      const cached = await cache.match(cacheKey);
+      if (cached) return cached;
+
+      const upstream = await fetch('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', {
+        headers: { 'User-Agent': 'OrganiseUs-Worker' },
+      });
+      if (!upstream.ok) {
+        return new Response(
+          "console.error('Supabase library upstream failed: " + upstream.status + "');",
+          {
+            status: 502,
+            headers: {
+              'Content-Type': 'application/javascript; charset=utf-8',
+              'Cache-Control': 'no-store',
+            },
+          }
+        );
+      }
+
+      const response = new Response(upstream.body, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+      await cache.put(cacheKey, response.clone());
+      return response;
+    }
+
     if (url.pathname.startsWith('/api/')) {
       return handleApi(request, env, url);
     }
