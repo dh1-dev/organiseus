@@ -7,15 +7,14 @@ const COOKIE_EXPIRES = 'ou_expires';
 const COOKIE_BASE = 'Path=/; HttpOnly; Secure; SameSite=Strict';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
-function json(data, status = 200, headers = {}) {
+function json(data, status = 200, headers = new Headers()) {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set('Content-Type', 'application/json; charset=utf-8');
+  responseHeaders.set('Cache-Control', 'no-store, private');
+  responseHeaders.set('X-Content-Type-Options', 'nosniff');
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store, private',
-      'X-Content-Type-Options': 'nosniff',
-      ...headers,
-    },
+    headers: responseHeaders,
   });
 }
 
@@ -97,6 +96,14 @@ async function currentSession(request) {
 
 async function handleApi(request, env, url) {
   try {
+    if (url.pathname === '/api/cookie-check' && request.method === 'GET') {
+      const cookies = parseCookies(request);
+      return json({
+        access_cookie: Boolean(cookies[COOKIE_ACCESS]),
+        refresh_cookie: Boolean(cookies[COOKIE_REFRESH]),
+        expires_cookie: Boolean(cookies[COOKIE_EXPIRES]),
+      });
+    }
     if (url.pathname === '/api/login' && request.method === 'POST') {
       const body = await request.json();
       if (!body?.email || !body?.password) return json({ error: 'Email and password are required.' }, 400);
