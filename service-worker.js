@@ -1,4 +1,4 @@
-const CACHE='organiseus-manual-auth-v6';
+const CACHE='organiseus-v20260730-session-standard';
 const FILES=['./','./index.html','./manifest.webmanifest?v=fullbleed4','./icon-full-192.png?v=4','./icon-full-512.png?v=4'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
