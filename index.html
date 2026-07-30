@@ -68,12 +68,51 @@ if(!window.supabase || typeof window.supabase.createClient!=='function'){
 }
 const URL='https://meaakswalvliphlexqqd.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lYWFrc3dhbHZsaXBobGV4cXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDE5NzUsImV4cCI6MjEwMDkxNzk3NX0.TQulUFAumLl7V-9Rw6Tm5Vreyp2SyRA8BnYyIdZNyqU';
-const AUTH_BACKUP_KEY='organiseus-auth-session-v2';
+const TOKEN_KEY='organiseus-manual-auth-v1';
 let manualSignOut=false;
-const sb=supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-meaakswalvliphlexqqd-auth-token'}});
-function backupSession(session){try{if(session&&session.access_token&&session.refresh_token)localStorage.setItem(AUTH_BACKUP_KEY,JSON.stringify({access_token:session.access_token,refresh_token:session.refresh_token}));}catch(e){}}
-function clearSessionBackup(){try{localStorage.removeItem(AUTH_BACKUP_KEY)}catch(e){}}
-async function restoreSessionBackup(){try{let raw=localStorage.getItem(AUTH_BACKUP_KEY);if(!raw)return null;let saved=JSON.parse(raw);if(!saved.access_token||!saved.refresh_token)return null;let r=await sb.auth.setSession(saved);if(r.error){clearSessionBackup();return null}backupSession(r.data.session);return r.data.session}catch(e){clearSessionBackup();return null}}
+
+// OrganiseUs manages the Supabase tokens itself. Supabase's own browser
+// persistence is disabled to avoid refresh-token races during page reload.
+const tokenVault=(function(){
+  const DB_NAME='organiseus-token-vault';
+  const STORE='tokens';
+  let dbPromise=null;
+  function openDB(){
+    if(!('indexedDB' in window))return Promise.resolve(null);
+    if(dbPromise)return dbPromise;
+    dbPromise=new Promise((resolve,reject)=>{
+      const req=indexedDB.open(DB_NAME,1);
+      req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE)};
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+    });
+    return dbPromise;
+  }
+  async function read(){
+    try{
+      const raw=localStorage.getItem(TOKEN_KEY);
+      if(raw){const v=JSON.parse(raw);if(v&&v.access_token&&v.refresh_token)return v;}
+    }catch(e){}
+    try{
+      const db=await openDB();
+      if(!db)return null;
+      return await new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readonly').objectStore(STORE).get(TOKEN_KEY);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error)});
+    }catch(e){return null}
+  }
+  async function write(session){
+    if(!session||!session.access_token||!session.refresh_token)return;
+    const value={access_token:session.access_token,refresh_token:session.refresh_token};
+    try{localStorage.setItem(TOKEN_KEY,JSON.stringify(value))}catch(e){}
+    try{const db=await openDB();if(db)await new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put(value,TOKEN_KEY);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}catch(e){}
+  }
+  async function clear(){
+    try{localStorage.removeItem(TOKEN_KEY)}catch(e){}
+    try{const db=await openDB();if(db)await new Promise((resolve,reject)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).delete(TOKEN_KEY);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)})}catch(e){}
+  }
+  return {read,write,clear};
+})();
+
+const sb=supabase.createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});
 let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], mePerson=null, mode='me', meArea='personal', otherId=null, channel=null, selectedStatus='todo', screen='tasks', calendarView='today', calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1), selectedCalendarDate=new Date().toISOString().slice(0,10);
 let savedShoppingSelection=new Set();
 const $=id=>document.getElementById(id); const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
@@ -252,47 +291,58 @@ function parseCommand(raw){let t=raw.trim().replace(/[.!?]+$/,'');let low=t.toLo
 async function voiceRun(){let raw=$('voiceInput').value.trim();if(!raw)return notify('Type or dictate a command');let done=raw.match(/(.+?)\s+(is|are)?\s*(now)?\s*done$/i);if(done){let names=done[1].split(/\s+and\s+|,/),hits=[];for(const n of names){let t=tasks.find(x=>x.status!=='done'&&x.title.toLowerCase().includes(n.trim().toLowerCase()));if(t){await sb.from('tasks').update({status:'done'}).eq('id',t.id);hits.push(t.title)}}if(hits.length){$('voiceInput').value='';$('voiceMessage').textContent='Completed: '+hits.join(', ');celebrate();notify('✓ Completed');await loadData()}else notify('No matching task');return}if(!/^(please\s+)?(add|create|make)\b/i.test(raw)&&!/^remind me to\b/i.test(raw))return notify('Command not understood');let p=parseCommand(raw);if(p.unknown)return notify(p.unknown+' is not in your People list');if(!p.title)return notify('Task title not recognised');if(p.area==='work'&&p.owner.user_id!==user.id)return notify('Work tasks can only be for yourself');if(p.area==='work'&&p.owner.name==='Milo')return notify('Milo only has personal tasks');let r=await sb.from('tasks').insert({household_id:householdId,owner_person_id:p.owner.id,owner_user_id:p.owner.user_id||null,title:p.title,description:'',area:p.area,status:'todo',due_date:p.due,repeat_rule:p.repeat,priority:'normal',monitoring:p.owner.id!==mePerson.id});if(r.error)notify(r.error.message);else{$('voiceInput').value='';$('voiceMessage').textContent='Task added: “'+p.title+'”';notify('✓ Task added');await loadData()}}
 function listen(){let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return $('voiceMessage').textContent='Use your keyboard microphone.';let r=new SR();r.lang='en-GB';r.onresult=e=>{$('voiceInput').value=e.results[0][0].transcript;voiceRun()};r.onerror=()=>$('voiceMessage').textContent='Use your keyboard microphone.';r.start()}
 function showAuthForm(which){$('loginForm').className=which==='login'?'':'hidden';$('recoveryRequestForm').className=which==='request'?'':'hidden';$('newPasswordForm').className=which==='new'?'':'hidden';$('loginError').textContent='';$('loginSuccess').textContent='';$('recoveryError').textContent='';$('recoverySuccess').textContent='';$('newPasswordError').textContent='';$('newPasswordSuccess').textContent=''}
-async function login(e){e.preventDefault();$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in…';$('loginError').textContent='';$('loginSuccess').textContent='';try{let r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error){$('loginError').textContent=r.error.message;return}if(!r.data||!r.data.session){$('loginError').textContent='Sign-in succeeded but no session was returned. Please refresh and try again.';return}backupSession(r.data.session);$('loginSuccess').textContent='Signed in. Loading OrganiseUs…';await handleSession(r.data.session)}catch(err){$('loginError').textContent=err&&err.message?err.message:'Unable to sign in. Check your connection and try again.'}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Sign in'}}
+async function login(e){e.preventDefault();$('loginBtn').disabled=true;$('loginBtn').textContent='Signing in…';$('loginError').textContent='';$('loginSuccess').textContent='';try{let r=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(r.error){$('loginError').textContent=r.error.message;return}if(!r.data||!r.data.session){$('loginError').textContent='Sign-in succeeded but no session was returned. Please refresh and try again.';return}await tokenVault.write(r.data.session);$('loginSuccess').textContent='Signed in. Loading OrganiseUs…';await handleSession(r.data.session)}catch(err){$('loginError').textContent=err&&err.message?err.message:'Unable to sign in. Check your connection and try again.'}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='Sign in'}}
 async function requestRecovery(e){e.preventDefault();$('sendRecoveryBtn').disabled=true;$('recoveryError').textContent='';$('recoverySuccess').textContent='';let email=$('recoveryEmail').value.trim();let r=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://dh1-dev.github.io/organiseus/'});$('sendRecoveryBtn').disabled=false;if(r.error)$('recoveryError').textContent=r.error.message;else $('recoverySuccess').textContent='Recovery email sent. Open the link in the email on this phone.'}
 async function saveNewPassword(e){e.preventDefault();$('newPasswordError').textContent='';$('newPasswordSuccess').textContent='';let p=$('newPassword').value,c=$('confirmPassword').value;if(p!==c){$('newPasswordError').textContent='The passwords do not match.';return}if(p.length<8){$('newPasswordError').textContent='Use at least 8 characters.';return}$('savePasswordBtn').disabled=true;let r=await sb.auth.updateUser({password:p});$('savePasswordBtn').disabled=false;if(r.error){$('newPasswordError').textContent=r.error.message;return}$('newPasswordSuccess').textContent='Password changed. Signing you in…';history.replaceState({},document.title,location.pathname);setTimeout(()=>handleSession(r.data.user?{user:r.data.user}:null),700)}
 async function init(){
-  let session=null,error=null;
-  try{
-    const result=await sb.auth.getSession();
-    session=result.data&&result.data.session?result.data.session:null;
-    error=result.error||null;
-  }catch(e){error=e}
-  if(!session)session=await restoreSessionBackup();
-  if(error&&!session)$('loginError').textContent=error.message||String(error);
   const recovery=location.hash.includes('type=recovery')||location.search.includes('type=recovery');
+  showAuthForm('login');
+
   if(recovery){
-    showAuthForm('new');
+    // Supabase reads the recovery tokens from the URL and emits PASSWORD_RECOVERY.
     $('loginView').className='login';
     $('appView').className='hidden';
   }else{
-    showAuthForm('login');
-    await handleSession(session);
+    const saved=await tokenVault.read();
+    if(saved){
+      try{
+        const result=await sb.auth.setSession(saved);
+        if(result.error||!result.data||!result.data.session){
+          await tokenVault.clear();
+          await handleSession(null);
+        }else{
+          await tokenVault.write(result.data.session);
+          await handleSession(result.data.session);
+        }
+      }catch(e){
+        $('loginError').textContent=e&&e.message?e.message:'Unable to restore your login.';
+        await handleSession(null);
+      }
+    }else{
+      await handleSession(null);
+    }
   }
+
   sb.auth.onAuthStateChange((event,s)=>{
+    // Never call the database from inside this callback. Supabase holds an auth
+    // lock here, and doing so can deadlock or invalidate a refresh token.
     if(event==='PASSWORD_RECOVERY'){
-      showAuthForm('new');
-      $('loginView').className='login';
-      $('appView').className='hidden';
+      setTimeout(()=>{
+        showAuthForm('new');
+        $('loginView').className='login';
+        $('appView').className='hidden';
+      },0);
       return;
     }
-    if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='INITIAL_SESSION'||event==='USER_UPDATED')&&s){
-      backupSession(s);
-      setTimeout(()=>handleSession(s),0);
-      return;
+    if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED'||event==='USER_UPDATED')&&s){
+      tokenVault.write(s).catch(()=>{});
     }
-    // Some mobile browsers briefly emit SIGNED_OUT during a page reload.
-    // Ignore it unless the user deliberately pressed the Sign out button.
     if(event==='SIGNED_OUT'&&manualSignOut){
       setTimeout(()=>handleSession(null),0);
     }
   });
 }
 async function handleSession(session){if(!session){user=null;$('loginView').className='login';$('appView').className='hidden';if(!$('newPasswordForm').classList.contains('hidden'))return;showAuthForm('login');return}user=session.user;$('loginView').className='hidden';$('appView').className='';$('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});try{await loadData()}catch(e){console.error(e);notify(e.message||'OrganiseUs could not load your data');$('tabs').innerHTML='<div class="error" style="padding:10px">'+esc(e.message||'Unable to load data')+'</div>';}}
-$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=async()=>{manualSignOut=true;clearSessionBackup();try{await sb.auth.signOut()}finally{await handleSession(null);setTimeout(()=>{manualSignOut=false},500)}};$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator)navigator.serviceWorker.register('./service-worker.js');init();
+$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{ $('recoveryEmail').value=$('email').value; showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=async()=>{manualSignOut=true;await tokenVault.clear();try{await sb.auth.signOut({scope:'local'})}finally{await handleSession(null);setTimeout(()=>{manualSignOut=false},500)}};$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('calendarBtn').onclick=()=>{screen='calendar';calendarView='today';render()};$('shoppingBtn').onclick=()=>{screen='shopping';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent();$('eventForm').onsubmit=saveEvent;$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('deleteEvent').onclick=removeEvent;$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('newShoppingItem').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addNewShopping()}};$('removeAllShopping').onclick=removeAllShopping;$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('area').onchange=applyTaskConstraints;$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator)navigator.serviceWorker.register('./service-worker.js');init();
 })();
 </script></body></html>
