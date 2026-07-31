@@ -1,0 +1,21 @@
+OrganiseUs Stable v1.4 — Named personal navigation
+
+Changed:
+- Bottom-left navigation label now shows the signed-in person's name
+- Dan sees "Dan"
+- Sarah sees "Sarah"
+- Falls back to "Me" if no profile name is available
+
+Unchanged:
+- Authentication and session persistence
+- Push notifications
+- Sync logic
+- Tasks, shopping and calendar
+- service-worker.js
+
+Checks:
+- Browser JavaScript syntax passed
+- Locked auth/session blocks unchanged
+
+index.html SHA-256:
+f73ee2a138474eed3216068483be51eb7e880179ee77ebb4ce69ad1adc658376
