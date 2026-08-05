@@ -1,4 +1,4 @@
-const CACHE_NAME='organiseus-stable-v2.5-proxy';
+const CACHE_NAME='organiseus-stable-v2.6-root-poster-fix';
 const APP_SHELL=[
   './',
   './index.html',
@@ -8,7 +8,6 @@ const APP_SHELL=[
 ];
 
 self.addEventListener('install',event=>{
-  self.skipWaiting();
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)));
 });
 

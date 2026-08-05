@@ -33,7 +33,7 @@
 @media(max-width:420px){.userbar{gap:5px}.sync{font-size:10px}.userbar button{padding:6px 8px}.bottom-nav{gap:1px;padding-left:3px;padding-right:3px}.nav-btn{font-size:9px;padding-left:1px;padding-right:1px}.nav-btn svg{width:22px;height:22px}.header{padding-left:9px;padding-right:9px}.logo{width:32px;height:32px}.brand h1{font-size:18px}.userbar span{display:none!important}}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.toolbar input{min-width:100%}.toolbar button{flex:1}}
 </style>
-</head><body data-build="2.5-proxy-forced-update">
+</head><body data-build="2.6-root-poster-fix">
 <div id="loginView" class="login">
  <div class="login-card"><div class="login-brand"><svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8d8df"/><stop offset=".45" stop-color="#9c82c8"/><stop offset="1" stop-color="#5e3c96"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g1)"/><path d="M19 33.5l8 8L45 22.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>OrganiseUs</h1></div>
  <form id="loginForm"><label class="field"><span>Email</span><input id="email" type="email" required autocomplete="username"></label><label class="field"><span>Password</span><input id="password" type="password" required autocomplete="current-password"></label><button id="loginBtn" class="primary" style="width:100%;margin-top:14px">Sign in</button><button id="forgotBtn" class="linkbtn" type="button" style="width:100%">Forgot password?</button><div id="loginError" class="error"></div><div id="loginSuccess" class="success"></div></form>
@@ -231,19 +231,19 @@ function movieAddedBy(movie){
 function safeMovieImage(url){
   if(!url)return '';
   try{
-    const parsed=new URL(url);
-    return parsed.protocol==='https:'?url:'';
+    const parsed=new globalThis.URL(url);
+    return parsed.protocol==='https:'?parsed.href:'';
   }catch{return ''}
 }
 function proxiedMovieImage(url){
   const safe=safeMovieImage(url);
   if(!safe)return '';
   try{
-    const parsed=new URL(safe);
+    const parsed=new globalThis.URL(safe);
     if(parsed.hostname!=='image.tmdb.org')return safe;
     const match=parsed.pathname.match(/^\/t\/p\/(?:w\d+|original)\/(.+)$/);
     if(!match||!match[1]||match[1].includes('..'))return '';
-    return `${URL}/functions/v1/tmdb-image?path=${encodeURIComponent(match[1])}&v=2`;
+    return `${URL}/functions/v1/tmdb-image?path=${encodeURIComponent(match[1])}&v=3`;
   }catch{return ''}
 }
 function renderMovies(){

@@ -1,7 +1,7 @@
 {
   "name": "OrganiseUs",
   "short_name": "OrganiseUs",
-  "start_url": "./?build=2.5",
+  "start_url": "./?build=2.6",
   "display": "standalone",
   "background_color": "#f2f1f5",
   "theme_color": "#6d4bb8",
