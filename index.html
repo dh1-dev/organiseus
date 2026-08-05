@@ -33,7 +33,7 @@
 @media(max-width:420px){.userbar{gap:5px}.sync{font-size:10px}.userbar button{padding:6px 8px}.bottom-nav{gap:1px;padding-left:3px;padding-right:3px}.nav-btn{font-size:9px;padding-left:1px;padding-right:1px}.nav-btn svg{width:22px;height:22px}.header{padding-left:9px;padding-right:9px}.logo{width:32px;height:32px}.brand h1{font-size:18px}.userbar span{display:none!important}}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.toolbar input{min-width:100%}.toolbar button{flex:1}}
 </style>
-</head><body>
+</head><body data-build="2.5-proxy-forced-update">
 <div id="loginView" class="login">
  <div class="login-card"><div class="login-brand"><svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8d8df"/><stop offset=".45" stop-color="#9c82c8"/><stop offset="1" stop-color="#5e3c96"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="url(#g1)"/><path d="M19 33.5l8 8L45 22.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>OrganiseUs</h1></div>
  <form id="loginForm"><label class="field"><span>Email</span><input id="email" type="email" required autocomplete="username"></label><label class="field"><span>Password</span><input id="password" type="password" required autocomplete="current-password"></label><button id="loginBtn" class="primary" style="width:100%;margin-top:14px">Sign in</button><button id="forgotBtn" class="linkbtn" type="button" style="width:100%">Forgot password?</button><div id="loginError" class="error"></div><div id="loginSuccess" class="success"></div></form>
@@ -241,22 +241,16 @@ function proxiedMovieImage(url){
   try{
     const parsed=new URL(safe);
     if(parsed.hostname!=='image.tmdb.org')return safe;
-    const marker='/t/p/';
-    const markerIndex=parsed.pathname.indexOf(marker);
-    if(markerIndex===-1)return safe;
-    const remainder=parsed.pathname.slice(markerIndex+marker.length);
-    const slashIndex=remainder.indexOf('/');
-    if(slashIndex===-1)return safe;
-    const imagePath=remainder.slice(slashIndex+1);
-    if(!imagePath||imagePath.includes('..'))return safe;
-    return `${URL}/functions/v1/tmdb-image?path=${encodeURIComponent(imagePath)}`;
-  }catch{return safe}
+    const match=parsed.pathname.match(/^\/t\/p\/(?:w\d+|original)\/(.+)$/);
+    if(!match||!match[1]||match[1].includes('..'))return '';
+    return `${URL}/functions/v1/tmdb-image?path=${encodeURIComponent(match[1])}&v=2`;
+  }catch{return ''}
 }
 function renderMovies(){
   $('moviesCount').textContent=movies.length?movies.length+' to watch':'Your shared watchlist is empty';
   $('movieList').innerHTML=movies.length?movies.map(movie=>{
     const image=proxiedMovieImage(movie.thumbnail_url);
-    const thumb=image?`<img class="movie-thumb" src="${esc(image)}" alt="" decoding="async" onerror="this.outerHTML='<div class=&quot;movie-thumb-fallback&quot;>🎬</div>'">`:'<div class="movie-thumb-fallback">🎬</div>';
+    const thumb=image?`<img class="movie-thumb" src="${esc(image)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;movie-thumb-fallback&quot;>🎬</div>'">`:'<div class="movie-thumb-fallback">🎬</div>';
     return `<article class="movie-card" data-id="${movie.id}">${thumb}<div><div class="movie-title">${esc(movie.title)}</div><div class="movie-meta">Added by ${esc(movieAddedBy(movie))}</div><div class="movie-actions"><button class="watched" data-movie-action="watched">Watched</button><button class="danger" data-movie-action="remove">Remove</button></div></div></article>`;
   }).join(''):'<div class="empty-state"><b>No movies added yet</b>Add a film that you and Sarah want to watch.</div>';
   document.querySelectorAll('.movie-card').forEach(card=>{
