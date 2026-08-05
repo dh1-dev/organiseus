@@ -17,6 +17,19 @@
 
 .movies-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.movies-head h2{margin:0;font-size:22px}.movies-subtitle{font-size:13px;color:#667;margin-top:3px}.movie-list{display:grid;gap:9px}.movie-card{display:grid;grid-template-columns:46px minmax(0,1fr);gap:10px;background:#fff;border:1px solid #dfe3e8;border-radius:13px;padding:9px;align-items:start}.movie-thumb{width:46px;height:66px;border-radius:7px;object-fit:cover;background:#eeeaf4;border:1px solid #ddd6e7}.movie-thumb-fallback{width:46px;height:66px;border-radius:7px;background:#eeeaf4;border:1px solid #ddd6e7;display:flex;align-items:center;justify-content:center;font-size:24px}.movie-title{font-weight:750;font-size:16px;line-height:1.2;margin:1px 0 3px}.movie-meta{font-size:11px;color:#777;margin-bottom:5px}.movie-note{font-size:13px;color:#45404b;line-height:1.35;white-space:pre-wrap}.movie-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:8px}.movie-actions button{padding:6px 9px;font-size:12px}.movie-actions .watched{background:#f0ebf8;color:#5b3d98;border-color:#d9ccea}.movie-url-help{font-size:11px;color:#777;margin-top:4px}
 
+
+.tmdb-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.tmdb-results{display:grid;gap:7px;margin-top:10px;max-height:330px;overflow:auto}
+.tmdb-result{display:grid;grid-template-columns:42px minmax(0,1fr);gap:9px;align-items:center;border:1px solid #ddd6e7;background:#fff;border-radius:10px;padding:7px;text-align:left;width:100%}
+.tmdb-result:hover,.tmdb-result:focus{border-color:#8c68c6;background:#f7f3fb}
+.tmdb-result img,.tmdb-result .fallback{width:42px;height:61px;border-radius:6px;object-fit:cover;background:#eeeaf4;display:flex;align-items:center;justify-content:center}
+.tmdb-result-title{font-weight:700;font-size:14px}
+.tmdb-result-meta{font-size:11px;color:#777;margin-top:2px}
+.tmdb-selected{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:9px;align-items:center;border:1px solid #cfc1e5;background:#f7f3fb;border-radius:10px;padding:8px;margin-top:10px}
+.tmdb-selected img{width:46px;height:66px;border-radius:7px;object-fit:cover}
+.tmdb-status{font-size:12px;color:#6d6575;margin-top:7px}
+.tmdb-attribution{font-size:10px;color:#7b7482;text-align:center;margin:14px 0 4px;line-height:1.35}
+
 @media(max-width:420px){.userbar{gap:5px}.sync{font-size:10px}.userbar button{padding:6px 8px}.bottom-nav{gap:1px;padding-left:3px;padding-right:3px}.nav-btn{font-size:9px;padding-left:1px;padding-right:1px}.nav-btn svg{width:22px;height:22px}.header{padding-left:9px;padding-right:9px}.logo{width:32px;height:32px}.brand h1{font-size:18px}.userbar span{display:none!important}}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.toolbar input{min-width:100%}.toolbar button{flex:1}}
 </style>
@@ -41,13 +54,22 @@
 </div><div id="moviesScreen" class="hidden">
   <div class="movies-head"><div><h2>Movies</h2><div id="moviesCount" class="movies-subtitle"></div></div><button id="addMovieBtn" class="primary">＋ Add movie</button></div>
   <div id="movieList" class="movie-list"></div>
+  <div class="tmdb-attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</div>
 </div></main>
 <nav class="bottom-nav" aria-label="Task navigation">
 <button id="meBtn" class="nav-btn active" aria-label="My tasks"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path></svg><span id="meNavLabel">Me</span></button>
 <button id="othersBtn" class="nav-btn" aria-label="Other people's tasks"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M2.5 21a6.5 6.5 0 0 1 13 0"></path><path d="M14 16.2a5 5 0 0 1 7.5 4.3"></path></svg><span>Others</span></button>
 <button id="calendarBtn" class="nav-btn" aria-label="Calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path></svg><span>Calendar</span></button><button id="moviesBtn" class="nav-btn" aria-label="Shared movie watchlist"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 5l2-3M12 5l2-3M17 5l2-3M3 9h18"></path><path d="M10 12.5l5 3-5 3z"></path></svg><span>Movies</span></button><button id="shoppingBtn" class="nav-btn" aria-label="Shared shopping list"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg><span>Shopping</span></button></nav></div>
 <div id="modal" class="modal hidden"><div class="box"><div class="head"><h2 id="modalTitle">Add task</h2><button id="closeModal">✕</button></div><form id="taskForm"><input id="taskId" type="hidden"><label class="field"><span>Title</span><input id="title" required maxlength="150"></label><label class="field"><span>Description</span><textarea id="description" rows="3"></textarea></label><div class="grid"><label class="field"><span>Area</span><select id="area"><option value="personal">Personal</option><option value="work">Work</option></select></label><label class="field"><span>Owner</span><select id="owner"></select></label><label class="field"><span>Status</span><select id="status"><option value="todo">To do</option><option value="progress">In progress</option><option value="done">Done</option></select></label><label class="field"><span>Due date</span><input id="due" type="date"></label><label class="field"><span>Repeats</span><select id="repeat"><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label><label id="categoryField" class="field"><span>Category</span><select id="category"><option value="general">General</option><option value="house">House</option><option value="car">Car</option><option value="money">Money</option><option value="activity">Activity</option></select></label><label class="field"><span>Priority</span><select id="priority"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select></label></div><div class="modal-actions"><button type="button" id="delete" class="danger hidden">Delete</button><button type="button" id="cancel">Cancel</button><button type="submit" class="primary">Save task</button></div></form></div></div>
-<div id="movieModal" class="modal hidden"><div class="box"><div class="head"><h2>Add movie</h2><button id="closeMovieModal">✕</button></div><form id="movieForm"><label class="field"><span>Movie title</span><input id="movieTitle" required maxlength="150"></label><label class="field"><span>Brief explanation</span><textarea id="movieNote" rows="3" maxlength="500" placeholder="Why do you want to watch it?"></textarea></label><label class="field"><span>Thumbnail URL (optional)</span><input id="movieThumbnail" type="url" inputmode="url" placeholder="https://..."></label><div class="movie-url-help">Paste a small poster-image link. A film icon is shown if left blank.</div><div class="modal-actions"><button type="button" id="cancelMovie">Cancel</button><button type="submit" class="primary">Add movie</button></div></form></div></div>
+<div id="movieModal" class="modal hidden"><div class="box"><div class="head"><h2>Add movie</h2><button id="closeMovieModal">✕</button></div><form id="movieForm">
+<div class="tmdb-search-row"><label class="field"><span>Movie title</span><input id="movieTitle" required maxlength="150" autocomplete="off"></label><button type="button" id="searchMovieBtn" class="primary">Search</button></div>
+<div id="tmdbStatus" class="tmdb-status"></div>
+<div id="tmdbResults" class="tmdb-results"></div>
+<div id="tmdbSelected" class="hidden"></div>
+
+<input id="movieThumbnail" type="hidden"><input id="movieTmdbId" type="hidden">
+<div class="modal-actions"><button type="button" id="cancelMovie">Cancel</button><button type="submit" class="primary">Add movie</button></div>
+</form></div></div>
 <div id="eventModal" class="modal hidden"><div class="box"><div class="head"><h2 id="eventModalTitle">Add event</h2><button id="closeEventModal">✕</button></div><form id="eventForm"><input id="eventId" type="hidden"><label class="field"><span>Title</span><input id="eventTitle" required maxlength="150"></label><label class="field"><span>Description</span><textarea id="eventDescription" rows="3"></textarea></label><div class="grid"><label class="field"><span>Date</span><input id="eventDate" type="date" required></label><label class="field"><span>Time (optional)</span><input id="eventTime" type="time"></label><label class="field"><span>Visibility</span><select id="eventVisibility"><option value="shared">Shared with household</option><option value="private">Only me</option></select></label></div><div class="modal-actions"><button type="button" id="deleteEvent" class="danger hidden">Delete</button><button type="button" id="cancelEvent">Cancel</button><button type="submit" class="primary">Save event</button></div></form></div></div>
 <div id="savedShoppingModal" class="modal hidden"><div class="box"><div class="head"><div><h2>Add shopping items</h2><div class="shopping-count">Search and select several saved items</div></div><button id="closeSavedShopping">✕</button></div><input id="savedShoppingSearch" class="saved-search" placeholder="Search saved items"><div id="savedShoppingList" class="saved-list"></div><div id="savedSelectedCount" class="selected-count">0 selected</div><section class="modal-new-item"><div class="shopping-add"><input id="newShoppingItem" maxlength="100" placeholder="e.g. Milk"><button id="addNewShopping" class="primary">Add</button></div><label class="save-option"><input id="saveShoppingItem" type="checkbox" checked> Save this item for next time</label></section><div class="modal-actions sticky"><button id="cancelSavedShopping">Cancel</button><button id="addSelectedShopping" class="primary">Add selected</button></div></div></div><div id="updateBanner" class="update-banner hidden"><span>A new OrganiseUs version is ready.</span><button id="applyUpdate">Update now</button></div><div id="confettiLayer" class="confetti-layer hidden" aria-hidden="true"></div><div id="toast" class="toast hidden"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -56,7 +78,7 @@
 const URL='https://meaakswalvliphlexqqd.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lYWFrc3dhbHZsaXBobGV4cXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDE5NzUsImV4cCI6MjEwMDkxNzk3NX0.TQulUFAumLl7V-9Rw6Tm5Vreyp2SyRA8BnYyIdZNyqU';
 const sb=supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], movies=[], mePerson=null, mode='me', meArea='personal', otherId=null, channel=null, selectedStatus='todo', selectedCategory='all', screen='tasks', calendarView='today', calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1), selectedCalendarDate=new Date().toISOString().slice(0,10);let savedShoppingSelection=new Set();
+let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], movies=[], mePerson=null, mode='me', meArea='personal', otherId=null, channel=null, selectedStatus='todo', selectedCategory='all', screen='tasks', calendarView='today', calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1), selectedCalendarDate=new Date().toISOString().slice(0,10);let savedShoppingSelection=new Set();let selectedTmdbMovie=null;
 const $=id=>document.getElementById(id); const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
 function notify(m){$('toast').textContent=m;$('toast').className='toast';clearTimeout(notify.t);notify.t=setTimeout(()=>$('toast').className='toast hidden',2400)}
 function fmt(s){if(!s)return'';let p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
@@ -218,7 +240,7 @@ function renderMovies(){
   $('movieList').innerHTML=movies.length?movies.map(movie=>{
     const image=safeMovieImage(movie.thumbnail_url);
     const thumb=image?`<img class="movie-thumb" src="${esc(image)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;movie-thumb-fallback&quot;>🎬</div>'">`:'<div class="movie-thumb-fallback">🎬</div>';
-    return `<article class="movie-card" data-id="${movie.id}">${thumb}<div><div class="movie-title">${esc(movie.title)}</div><div class="movie-meta">Added by ${esc(movieAddedBy(movie))}</div>${movie.note?`<div class="movie-note">${esc(movie.note)}</div>`:''}<div class="movie-actions"><button class="watched" data-movie-action="watched">Watched</button><button class="danger" data-movie-action="remove">Remove</button></div></div></article>`;
+    return `<article class="movie-card" data-id="${movie.id}">${thumb}<div><div class="movie-title">${esc(movie.title)}</div><div class="movie-meta">Added by ${esc(movieAddedBy(movie))}</div><div class="movie-actions"><button class="watched" data-movie-action="watched">Watched</button><button class="danger" data-movie-action="remove">Remove</button></div></div></article>`;
   }).join(''):'<div class="empty-state"><b>No movies added yet</b>Add a film that you and Sarah want to watch.</div>';
   document.querySelectorAll('.movie-card').forEach(card=>{
     card.querySelectorAll('[data-movie-action]').forEach(button=>{
@@ -228,26 +250,81 @@ function renderMovies(){
 }
 function openMovie(){
   $('movieTitle').value='';
-  $('movieNote').value='';
   $('movieThumbnail').value='';
+  $('movieTmdbId').value='';
+  $('tmdbStatus').textContent='';
+  $('tmdbResults').innerHTML='';
+  $('tmdbSelected').className='hidden';
+  $('tmdbSelected').innerHTML='';
+  selectedTmdbMovie=null;
   $('movieModal').className='modal';
   setTimeout(()=>$('movieTitle').focus(),50);
 }
 function closeMovie(){
   $('movieModal').className='modal hidden';
 }
+
+async function searchTmdbMovies(){
+  const query=$('movieTitle').value.trim();
+  if(!query)return notify('Enter a movie title first');
+  $('searchMovieBtn').disabled=true;
+  $('tmdbStatus').textContent='Searching TMDB…';
+  $('tmdbResults').innerHTML='';
+  try{
+    const result=await sb.functions.invoke('search-movies',{body:{query}});
+    if(result.error)throw result.error;
+    const items=result.data?.results||[];
+    $('tmdbStatus').textContent=items.length?'Choose the correct movie below':'No matching movies found';
+    $('tmdbResults').innerHTML=items.map(item=>{
+      const poster=item.poster_url?`<img src="${esc(item.poster_url)}" alt="" loading="lazy">`:'<div class="fallback">🎬</div>';
+      const year=item.release_date?item.release_date.slice(0,4):'Year unknown';
+      return `<button type="button" class="tmdb-result" data-tmdb-id="${item.id}">${poster}<div><div class="tmdb-result-title">${esc(item.title)}</div><div class="tmdb-result-meta">${esc(year)}${item.overview?' · '+esc(item.overview.slice(0,90))+(item.overview.length>90?'…':''):''}</div></div></button>`;
+    }).join('');
+    document.querySelectorAll('.tmdb-result').forEach(button=>{
+      button.onclick=()=>selectTmdbMovie(items.find(item=>String(item.id)===button.dataset.tmdbId));
+    });
+  }catch(error){
+    $('tmdbStatus').textContent='';
+    notify('Movie search failed: '+(error.message||'Unknown error'));
+  }finally{
+    $('searchMovieBtn').disabled=false;
+  }
+}
+function selectTmdbMovie(movie){
+  if(!movie)return;
+  selectedTmdbMovie=movie;
+  $('movieTitle').value=movie.title;
+  $('movieThumbnail').value=movie.poster_url||'';
+  $('movieTmdbId').value=movie.id||'';
+  $('tmdbResults').innerHTML='';
+  $('tmdbStatus').textContent='';
+  const poster=movie.poster_url?`<img src="${esc(movie.poster_url)}" alt="">`:'<div class="movie-thumb-fallback">🎬</div>';
+  const year=movie.release_date?movie.release_date.slice(0,4):'';
+  $('tmdbSelected').className='tmdb-selected';
+  $('tmdbSelected').innerHTML=`${poster}<div><div class="movie-title">${esc(movie.title)}</div><div class="movie-meta">${esc(year)}</div></div><button type="button" id="changeTmdbMovie">Change</button>`;
+  $('changeTmdbMovie').onclick=()=>{
+    selectedTmdbMovie=null;
+    $('movieThumbnail').value='';
+    $('movieTmdbId').value='';
+    $('tmdbSelected').className='hidden';
+    $('tmdbSelected').innerHTML='';
+    searchTmdbMovies();
+  };
+}
+
 async function saveMovie(event){
   event.preventDefault();
   const title=$('movieTitle').value.trim();
-  const note=$('movieNote').value.trim();
   const thumbnail=$('movieThumbnail').value.trim();
+  const tmdbId=$('movieTmdbId').value.trim();
   if(!title)return notify('Enter a movie title');
-  if(thumbnail&&!safeMovieImage(thumbnail))return notify('Thumbnail must be a valid HTTPS image URL');
+  if(!selectedTmdbMovie)return notify('Search for the movie and choose the correct result');
   const result=await sb.from('movies').insert({
     household_id:householdId,
     title,
-    note,
+    note:'',
     thumbnail_url:thumbnail||null,
+    tmdb_id:tmdbId?Number(tmdbId):null,
     added_by:user.id
   });
   if(result.error)notify(result.error.message);
@@ -587,7 +664,7 @@ async function init(){
     return;
   }let {data:{session}}=await sb.auth.getSession();handleSession(session);sb.auth.onAuthStateChange((_e,s)=>handleSession(s))}
 async function handleSession(session){if(!session){user=null;$('loginView').className='login';$('appView').className='hidden';return}user=session.user;$('loginView').className='hidden';$('appView').className='';$('signedIn').textContent=user.email;$('today').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});try{await loadData()}catch(e){$('syncText').textContent='Sync error';notify(e.message)}}
-$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{$('recoveryEmail').value=$('email').value;showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=()=>sb.auth.signOut();$('pushBtn').onclick=enablePushNotifications;$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('calendarBtn').onclick=()=>{screen='calendar';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent(null);$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('eventForm').onsubmit=saveEvent;$('deleteEvent').onclick=removeEvent;$('moviesBtn').onclick=()=>{screen='movies';render()};$('addMovieBtn').onclick=openMovie;$('closeMovieModal').onclick=closeMovie;$('cancelMovie').onclick=closeMovie;$('movieForm').onsubmit=saveMovie;$('shoppingBtn').onclick=()=>{screen='shopping';render()};$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('removeAllShopping').onclick=removeAllShopping;$('area').addEventListener('change',updateCategoryVisibility);$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator){
+$('loginForm').onsubmit=login;$('forgotBtn').onclick=()=>{$('recoveryEmail').value=$('email').value;showAuthForm('request')};$('backToLoginBtn').onclick=()=>showAuthForm('login');$('recoveryRequestForm').onsubmit=requestRecovery;$('newPasswordForm').onsubmit=saveNewPassword;$('signOut').onclick=()=>sb.auth.signOut();$('pushBtn').onclick=enablePushNotifications;$('meBtn').onclick=()=>{screen='tasks';mode='me';selectedStatus='todo';render()};$('othersBtn').onclick=()=>{screen='tasks';mode='others';selectedStatus='todo';render()};$('search').oninput=render;$('addBtn').onclick=()=>openTask();$('voiceBtn').onclick=()=>$('voicePanel').className='panel';$('closeVoice').onclick=()=>$('voicePanel').className='panel hidden';$('runVoice').onclick=voiceRun;$('listen').onclick=listen;$('calendarBtn').onclick=()=>{screen='calendar';render()};document.querySelectorAll('#calendarTabs button').forEach(b=>b.onclick=()=>{calendarView=b.dataset.view;renderCalendar()});$('calendarPrev').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('calendarNext').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};$('addEventBtn').onclick=()=>openEvent(null);$('closeEventModal').onclick=closeEvent;$('cancelEvent').onclick=closeEvent;$('eventForm').onsubmit=saveEvent;$('deleteEvent').onclick=removeEvent;$('moviesBtn').onclick=()=>{screen='movies';render()};$('searchMovieBtn').onclick=searchTmdbMovies;$('movieTitle').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchTmdbMovies()}});$('addMovieBtn').onclick=openMovie;$('closeMovieModal').onclick=closeMovie;$('cancelMovie').onclick=closeMovie;$('movieForm').onsubmit=saveMovie;$('shoppingBtn').onclick=()=>{screen='shopping';render()};$('openSavedShopping').onclick=openSavedShopping;$('closeSavedShopping').onclick=closeSavedShopping;$('cancelSavedShopping').onclick=closeSavedShopping;$('savedShoppingSearch').oninput=renderSavedShoppingModal;$('addSelectedShopping').onclick=addSelectedShopping;$('addNewShopping').onclick=addNewShopping;$('removeAllShopping').onclick=removeAllShopping;$('area').addEventListener('change',updateCategoryVisibility);$('taskForm').onsubmit=saveTask;$('closeModal').onclick=closeModal;$('cancel').onclick=closeModal;$('delete').onclick=removeTask;if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{
       const registration=await navigator.serviceWorker.register('./service-worker.js?v=stable-v1.3');
