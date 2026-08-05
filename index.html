@@ -30,11 +30,6 @@
 .tmdb-status{font-size:12px;color:#6d6575;margin-top:7px}
 .tmdb-attribution{font-size:10px;color:#7b7482;text-align:center;margin:14px 0 4px;line-height:1.35}
 
-
-.movie-thumb{display:block}
-.movie-thumb.loading{opacity:.35}
-.movie-thumb-fallback.poster-loading{font-size:15px;color:#7b7482}
-
 @media(max-width:420px){.userbar{gap:5px}.sync{font-size:10px}.userbar button{padding:6px 8px}.bottom-nav{gap:1px;padding-left:3px;padding-right:3px}.nav-btn{font-size:9px;padding-left:1px;padding-right:1px}.nav-btn svg{width:22px;height:22px}.header{padding-left:9px;padding-right:9px}.logo{width:32px;height:32px}.brand h1{font-size:18px}.userbar span{display:none!important}}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.toolbar input{min-width:100%}.toolbar button{flex:1}}
 </style>
@@ -237,104 +232,37 @@ function safeMovieImage(url){
   if(!url)return '';
   try{
     const parsed=new URL(url);
-    if(parsed.protocol!=='https:')return '';
-    if(parsed.hostname!=='image.tmdb.org')return parsed.href;
-    return parsed.href;
+    return parsed.protocol==='https:'?url:'';
   }catch{return ''}
 }
-function tmdbPosterCandidates(url){
+function proxiedMovieImage(url){
   const safe=safeMovieImage(url);
-  if(!safe)return [];
-  if(!safe.includes('image.tmdb.org/t/p/'))return [safe];
-  const sizes=['w342','w185','original'];
-  const candidates=sizes.map(size=>safe.replace(/\/t\/p\/(?:w\d+|original)\//,`/t/p/${size}/`));
-  return [...new Set(candidates)];
-}
-function createMoviePoster(movie){
-  const wrapper=document.createElement('div');
-  wrapper.className='movie-thumb-fallback poster-loading';
-  wrapper.textContent='Loading…';
-
-  const candidates=tmdbPosterCandidates(movie.thumbnail_url);
-  if(!candidates.length){
-    wrapper.className='movie-thumb-fallback';
-    wrapper.textContent='🎬';
-    return wrapper;
-  }
-
-  const image=document.createElement('img');
-  image.className='movie-thumb loading';
-  image.alt=`${movie.title||'Movie'} poster`;
-  image.loading='eager';
-  image.decoding='async';
-  image.referrerPolicy='no-referrer';
-
-  let attempt=0;
-  const tryNext=()=>{
-    if(attempt>=candidates.length){
-      image.remove();
-      wrapper.className='movie-thumb-fallback';
-      wrapper.textContent='🎬';
-      return;
-    }
-    image.src=candidates[attempt++];
-  };
-
-  image.addEventListener('load',()=>{
-    image.classList.remove('loading');
-    wrapper.replaceWith(image);
-  });
-
-  image.addEventListener('error',tryNext);
-
-  tryNext();
-  return wrapper;
+  if(!safe)return '';
+  try{
+    const parsed=new URL(safe);
+    if(parsed.hostname!=='image.tmdb.org')return safe;
+    const marker='/t/p/';
+    const markerIndex=parsed.pathname.indexOf(marker);
+    if(markerIndex===-1)return safe;
+    const remainder=parsed.pathname.slice(markerIndex+marker.length);
+    const slashIndex=remainder.indexOf('/');
+    if(slashIndex===-1)return safe;
+    const imagePath=remainder.slice(slashIndex+1);
+    if(!imagePath||imagePath.includes('..'))return safe;
+    return `${URL}/functions/v1/tmdb-image?path=${encodeURIComponent(imagePath)}`;
+  }catch{return safe}
 }
 function renderMovies(){
   $('moviesCount').textContent=movies.length?movies.length+' to watch':'Your shared watchlist is empty';
-  const list=$('movieList');
-  list.innerHTML='';
-
-  if(!movies.length){
-    list.innerHTML='<div class="empty-state"><b>No movies added yet</b>Add a film that you and Sarah want to watch.</div>';
-    return;
-  }
-
-  movies.forEach(movie=>{
-    const card=document.createElement('article');
-    card.className='movie-card';
-    card.dataset.id=movie.id;
-
-    const poster=createMoviePoster(movie);
-    const content=document.createElement('div');
-
-    const title=document.createElement('div');
-    title.className='movie-title';
-    title.textContent=movie.title||'Untitled movie';
-
-    const meta=document.createElement('div');
-    meta.className='movie-meta';
-    meta.textContent=`Added by ${movieAddedBy(movie)}`;
-
-    const actions=document.createElement('div');
-    actions.className='movie-actions';
-
-    const watched=document.createElement('button');
-    watched.className='watched';
-    watched.type='button';
-    watched.textContent='Watched';
-    watched.onclick=()=>removeMovie(movie.id,'watched');
-
-    const remove=document.createElement('button');
-    remove.className='danger';
-    remove.type='button';
-    remove.textContent='Remove';
-    remove.onclick=()=>removeMovie(movie.id,'remove');
-
-    actions.append(watched,remove);
-    content.append(title,meta,actions);
-    card.append(poster,content);
-    list.append(card);
+  $('movieList').innerHTML=movies.length?movies.map(movie=>{
+    const image=proxiedMovieImage(movie.thumbnail_url);
+    const thumb=image?`<img class="movie-thumb" src="${esc(image)}" alt="" decoding="async" onerror="this.outerHTML='<div class=&quot;movie-thumb-fallback&quot;>🎬</div>'">`:'<div class="movie-thumb-fallback">🎬</div>';
+    return `<article class="movie-card" data-id="${movie.id}">${thumb}<div><div class="movie-title">${esc(movie.title)}</div><div class="movie-meta">Added by ${esc(movieAddedBy(movie))}</div><div class="movie-actions"><button class="watched" data-movie-action="watched">Watched</button><button class="danger" data-movie-action="remove">Remove</button></div></div></article>`;
+  }).join(''):'<div class="empty-state"><b>No movies added yet</b>Add a film that you and Sarah want to watch.</div>';
+  document.querySelectorAll('.movie-card').forEach(card=>{
+    card.querySelectorAll('[data-movie-action]').forEach(button=>{
+      button.onclick=()=>removeMovie(card.dataset.id,button.dataset.movieAction);
+    });
   });
 }
 function openMovie(){
