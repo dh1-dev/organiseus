@@ -1,0 +1,46 @@
+name: Add more cleaning tasks
+on:
+  push:
+    paths:
+      - '.github/workflows/add-more-cleaning-tasks.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add cleaning presets
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          replacements={
+            "['☕','Clean coffee machine','45 min'],":"['☕','Clean coffee machine','45 min'],['🧊','Clean fridge','15 min'],",
+            "['🌀','Clean kitchen extraction','20 min'],":"['🌀','Clean kitchen extraction','20 min'],['🧽','Clean light switches and handles','20 min'],",
+            "['🧽','Clean kitchen sides','10 min'],":"['🧽','Clean kitchen sides','10 min'],['📡','Clean microwave','15 min'],['🪞','Clean mirrors','10 min'],['🧱','Clean patio slabs','30 min'],",
+            "['🧺','Do washing','10 min'],":"['🧺','Do washing','10 min'],['🪟','Dust blinds','1 hr'],",
+            "['🧹','Hoover upstairs','10 min'],":"['🧹','Hoover upstairs','10 min'],['💦','Jet wash patio','3 hr'],"
+          }
+          for old,new in replacements.items():
+              if old not in s:
+                  raise SystemExit('Missing preset anchor: '+old)
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          js=s.split('<script>')[-1].split('</script>',1)[0]
+          Path('/tmp/organiseus-app.js').write_text(js)
+          PY
+          node --check /tmp/organiseus-app.js
+      - name: Commit
+        run: |
+          git config user.name "OrganiseUs updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add more cleaning task presets" || exit 0
+          git push
