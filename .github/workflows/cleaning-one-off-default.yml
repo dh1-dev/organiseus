@@ -1,0 +1,58 @@
+name: Cleaning one-off default
+on:
+  push:
+    paths:
+      - '.github/workflows/cleaning-one-off-default.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add one-off cleaning frequency
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old='<label class="field"><span>Frequency</span><select id="cleaningRepeat"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>'
+          new='<label class="field"><span>Frequency</span><select id="cleaningRepeat"><option value="none" selected>One-off</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label>'
+          if old not in s:
+              raise SystemExit('Cleaning frequency selector not found')
+          s=s.replace(old,new,1)
+
+          old_open="$('cleaningRepeat').value=(t?.repeat_rule&&t.repeat_rule!=='none')?t.repeat_rule:'weekly';"
+          new_open="$('cleaningRepeat').value=(t?.repeat_rule&&t.repeat_rule!=='none')?t.repeat_rule:'none';"
+          if old_open not in s:
+              raise SystemExit('Cleaning repeat default not found')
+          s=s.replace(old_open,new_open,1)
+
+          # One-off never carries a repeat day. Weekly alone shows the day selector.
+          old_visibility="if(clean){if($('cleaningRepeat').value==='weekly'&&!$('cleaningRepeatDay').value)$('cleaningRepeatDay').value='5';$('repeat').value=$('cleaningRepeat').value;$('cleaningRepeatDayField').className=$('cleaningRepeat').value==='weekly'?'field':'field hidden';if($('cleaningRepeat').value==='weekly'){let day=Number($('cleaningRepeatDay').value),current=$('due').value;if(!current||parseLocalDate(current).getDay()!==day)$('due').value=nextWeekday(day,new Date(),true)}}else{$('cleaningRepeatDayField').className='field hidden'}"
+          new_visibility="if(clean){let cleaningRule=$('cleaningRepeat').value||'none';$('repeat').value=cleaningRule;if(cleaningRule==='weekly'&&!$('cleaningRepeatDay').value)$('cleaningRepeatDay').value='5';$('cleaningRepeatDayField').className=cleaningRule==='weekly'?'field':'field hidden';if(cleaningRule==='weekly'){let day=Number($('cleaningRepeatDay').value),current=$('due').value;if(!current||parseLocalDate(current).getDay()!==day)$('due').value=nextWeekday(day,new Date(),true)}}else{$('cleaningRepeatDayField').className='field hidden'}"
+          if old_visibility not in s:
+              raise SystemExit('Cleaning visibility logic not found')
+          s=s.replace(old_visibility,new_visibility,1)
+
+          s=s.replace('data-build="3.6-task-create-defaults"','data-build="3.7-cleaning-one-off-default"')
+          p.write_text(s)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          js=s.split('<script>')[-1].split('</script>',1)[0]
+          Path('/tmp/organiseus-app.js').write_text(js)
+          PY
+          node --check /tmp/organiseus-app.js
+
+      - name: Commit
+        run: |
+          git config user.name "OrganiseUs updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add one-off cleaning frequency default" || exit 0
+          git push
