@@ -1,0 +1,41 @@
+name: Update OrganiseUs cleaning presets
+on:
+  push:
+    paths:
+      - '.github/workflows/update-cleaning-presets-1215.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update cleaning preset list
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old="const CLEANING_PRESETS=[['🧺','Change towels'],['🛁','Clean bathrooms'],['☕','Clean coffee machine'],['🧽','Clean kitchen floor'],['🧽','Clean kitchen sides'],['🚿','Clean shower'],['🪟','Clean windows'],['🌱','Cut grass'],['🧺','Do washing'],['🪶','Dust downstairs'],['🪵','Dust skirting'],['🪶','Dust upstairs'],['🗑️','Empty bins'],['🍽️','Empty dishwasher'],['🧹','Hoover downstairs'],['🧹','Hoover stairs'],['🧹','Hoover upstairs'],['🍽️','Load dishwasher'],['🛏️','Put bedding on'],['🧸','Put toys away'],['👕','Put washing away'],['🛏️','Remove bedding'],['🧴','Shampoo carpet stains'],['🛋️','Shampoo sofa'],['🧸','Tidy bedrooms'],['🛋️','Tidy lounge']]"
+          new="const CLEANING_PRESETS=[['🧺','Change towels'],['🛁','Clean bathrooms'],['☕','Clean coffee machine'],['🌀','Clean kitchen extraction'],['🧽','Clean kitchen door fronts'],['🧽','Clean kitchen floor'],['🧽','Clean kitchen sides'],['🚿','Clean shower'],['🪟','Clean windows'],['🌱','Cut back grass'],['🌱','Cut front grass'],['🔥','Deep clean oven'],['🧺','Do washing'],['🪶','Dust downstairs'],['🪵','Dust skirting'],['🪶','Dust upstairs'],['🗑️','Empty bins'],['🍽️','Empty dishwasher'],['🧹','Hoover downstairs'],['🧹','Hoover stairs'],['🧹','Hoover upstairs'],['🍽️','Load dishwasher'],['🛏️','Put bedding on'],['🧸','Put toys away'],['👕','Put washing away'],['🛏️','Remove bedding'],['🧴','Shampoo carpet stains'],['🛋️','Shampoo sofa'],['🧸','Tidy bedrooms'],['🛋️','Tidy lounge']]"
+          if old not in s:
+              raise SystemExit('Expected cleaning preset list not found')
+          s=s.replace(old,new,1)
+          s=s.replace('data-build="3.2-searchable-cleaning-list"','data-build="3.3-expanded-cleaning-list"')
+          p.write_text(s)
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          js=s.split('<script>')[-1].split('</script>',1)[0]
+          Path('/tmp/organiseus-app.js').write_text(js)
+          PY
+          node --check /tmp/organiseus-app.js
+      - name: Commit
+        run: |
+          git config user.name "OrganiseUs updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Expand cleaning preset list" || exit 0
+          git push
