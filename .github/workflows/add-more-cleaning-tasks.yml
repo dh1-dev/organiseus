@@ -1,4 +1,4 @@
-name: Add more cleaning tasks
+name: Sort cleaning tasks
 on:
   push:
     paths:
@@ -10,24 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add cleaning presets
+      - name: Sort cleaning presets alphabetically
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
+          import ast,re
           p=Path('index.html')
           s=p.read_text()
-          replacements={
-            "['☕','Clean coffee machine','45 min'],":"['☕','Clean coffee machine','45 min'],['🧊','Clean fridge','15 min'],",
-            "['🌀','Clean kitchen extraction','20 min'],":"['🌀','Clean kitchen extraction','20 min'],['🧽','Clean light switches and handles','20 min'],",
-            "['🧽','Clean kitchen sides','10 min'],":"['🧽','Clean kitchen sides','10 min'],['📡','Clean microwave','15 min'],['🪞','Clean mirrors','10 min'],['🧱','Clean patio slabs','30 min'],",
-            "['🧺','Do washing','10 min'],":"['🧺','Do washing','10 min'],['🪟','Dust blinds','1 hr'],",
-            "['🧹','Hoover upstairs','10 min'],":"['🧹','Hoover upstairs','10 min'],['💦','Jet wash patio','3 hr'],"
-          }
-          for old,new in replacements.items():
-              if old not in s:
-                  raise SystemExit('Missing preset anchor: '+old)
-              s=s.replace(old,new,1)
+          m=re.search(r'const CLEANING_PRESETS=(\[.*?\])\nconst DAY_NAMES=',s,re.S)
+          if not m:
+              raise SystemExit('Cleaning preset list not found')
+          items=ast.literal_eval(m.group(1))
+          items=sorted(items,key=lambda x:x[1].casefold())
+          rendered='['+','.join(repr(x) for x in items)+']'
+          s=s[:m.start(1)]+rendered+s[m.end(1):]
           p.write_text(s)
           PY
           python - <<'PY'
@@ -42,5 +39,5 @@ jobs:
           git config user.name "OrganiseUs updater"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git commit -m "Add more cleaning task presets" || exit 0
+          git commit -m "Sort cleaning presets alphabetically" || exit 0
           git push
