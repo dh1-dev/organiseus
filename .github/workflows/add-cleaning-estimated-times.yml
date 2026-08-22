@@ -1,0 +1,57 @@
+name: Cleaning estimated times
+on:
+  push:
+    paths:
+      - '.github/workflows/add-cleaning-estimated-times.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add estimated times to cleaning presets
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old="const CLEANING_PRESETS=[['🧺','Change towels'],['🛁','Clean bathrooms'],['☕','Clean coffee machine'],['🌀','Clean kitchen extraction'],['🧽','Clean kitchen door fronts'],['🧽','Clean kitchen floor'],['🧽','Clean kitchen sides'],['🚿','Clean shower'],['🪟','Clean windows'],['🌱','Cut back grass'],['🌱','Cut front grass'],['🔥','Deep clean oven'],['🧺','Do washing'],['🪶','Dust downstairs'],['🪵','Dust skirting'],['🪶','Dust upstairs'],['🗑️','Empty bins'],['🍽️','Empty dishwasher'],['🧹','Hoover downstairs'],['🧹','Hoover stairs'],['🧹','Hoover upstairs'],['🍽️','Load dishwasher'],['🛏️','Put bedding on'],['🧸','Put toys away'],['👕','Put washing away'],['🛏️','Remove bedding'],['🧴','Shampoo carpet stains'],['🛋️','Shampoo sofa'],['🧸','Tidy bedrooms'],['🛋️','Tidy lounge']]"
+          new="const CLEANING_PRESETS=[['🧺','Change towels','5 min'],['🛁','Clean bathrooms','30 min'],['☕','Clean coffee machine','10 min'],['🌀','Clean kitchen extraction','20 min'],['🧽','Clean kitchen door fronts','20 min'],['🧽','Clean kitchen floor','15 min'],['🧽','Clean kitchen sides','10 min'],['🚿','Clean shower','15 min'],['🪟','Clean windows','30 min'],['🌱','Cut back grass','30 min'],['🌱','Cut front grass','20 min'],['🔥','Deep clean oven','60 min'],['🧺','Do washing','10 min'],['🪶','Dust downstairs','15 min'],['🪵','Dust skirting','20 min'],['🪶','Dust upstairs','15 min'],['🗑️','Empty bins','10 min'],['🍽️','Empty dishwasher','10 min'],['🧹','Hoover downstairs','20 min'],['🧹','Hoover stairs','10 min'],['🧹','Hoover upstairs','20 min'],['🍽️','Load dishwasher','10 min'],['🛏️','Put bedding on','10 min'],['🧸','Put toys away','10 min'],['👕','Put washing away','15 min'],['🛏️','Remove bedding','5 min'],['🧴','Shampoo carpet stains','15 min'],['🛋️','Shampoo sofa','45 min'],['🧸','Tidy bedrooms','20 min'],['🛋️','Tidy lounge','15 min']]"
+          if old not in s:
+              raise SystemExit('Cleaning preset list not found')
+          s=s.replace(old,new,1)
+
+          old_render="matches.map(([icon,name])=>`<button type=\"button\" class=\"cleaning-suggestion\" data-cleaning-task=\"${esc(name)}\"><span class=\"cleaning-suggestion-icon\">${icon}</span><span class=\"cleaning-suggestion-name\">${esc(name)}</span></button>`)"
+          new_render="matches.map(([icon,name,time])=>`<button type=\"button\" class=\"cleaning-suggestion\" data-cleaning-task=\"${esc(name)}\"><span class=\"cleaning-suggestion-icon\">${icon}</span><span class=\"cleaning-suggestion-name\">${esc(name)} <span class=\"cleaning-estimate\">(${esc(time)})</span></span></button>`)"
+          if old_render not in s:
+              raise SystemExit('Cleaning suggestion renderer not found')
+          s=s.replace(old_render,new_render,1)
+
+          css_anchor='.cleaning-suggestion-name{font-size:13px;color:#302938}'
+          css_new='.cleaning-suggestion-name{font-size:13px;color:#302938}.cleaning-estimate{color:#777;font-size:12px;white-space:nowrap}'
+          if css_anchor not in s:
+              raise SystemExit('Cleaning suggestion CSS not found')
+          s=s.replace(css_anchor,css_new,1)
+
+          s=s.replace('data-build="3.8-cleaning-selected-title"','data-build="3.9-cleaning-estimated-times"')
+          p.write_text(s)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          js=s.split('<script>')[-1].split('</script>',1)[0]
+          Path('/tmp/organiseus-app.js').write_text(js)
+          PY
+          node --check /tmp/organiseus-app.js
+
+      - name: Commit
+        run: |
+          git config user.name "OrganiseUs updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add cleaning task estimated times" || exit 0
+          git push
