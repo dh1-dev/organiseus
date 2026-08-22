@@ -1,0 +1,88 @@
+name: Update OrganiseUs cleaning presets
+on:
+  push:
+    paths:
+      - '.github/workflows/cleaning-presets-no-points.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+
+          def must(old,new,count=1):
+              global s
+              if old not in s:
+                  raise SystemExit('Missing expected text: '+old[:160])
+              s=s.replace(old,new,count)
+
+          # Remove points-related UI styles and point badges/totals container usage can remain harmlessly styled out.
+          s=re.sub(r'\.cleaning-points\{.*?\.points-chip\{background:#eee8f8;color:#5b3d98;font-weight:700\}', '.cleaning-fields{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px;border:1px solid #e1d5ef;border-radius:11px;background:#faf7fd}.cleaning-fields .field{margin-top:0}.cleaning-hint{grid-column:1/-1;font-size:11px;color:#6d6575}.cleaning-card{border-left:4px solid #8f73c7}.task-title-row{display:flex;align-items:center;gap:7px}.task-type-icon{width:25px;height:25px;display:inline-grid;place-items:center;background:#eee8f8;border-radius:8px;flex:0 0 auto}', s, count=1, flags=re.S)
+
+          # Remove the cleaning totals panel from the main task screen.
+          s=s.replace('<div id="cleaningPoints" class="cleaning-points hidden"></div>','')
+
+          # Replace cleaning preset block so it sits immediately below Category and no longer contains points.
+          # First remove the old block wherever it currently is.
+          s=re.sub(r'<div id="cleaningFields" class="cleaning-fields hidden">.*?</div><label class="field"><span>Priority</span>', '<label class="field"><span>Priority</span>', s, count=1, flags=re.S)
+          category='''<label id="categoryField" class="field"><span>Category</span><select id="category"><option value="general">📋 General</option><option value="house">🏠 House</option><option value="car">🚗 Car</option><option value="money">💷 Money</option><option value="cleaning">🧹 Cleaning</option></select></label>'''
+          cleaning='''<div id="cleaningFields" class="cleaning-fields hidden"><label class="field"><span>Cleaning task</span><select id="cleaningPreset"><option value="">Choose a task…</option></select></label><label class="field"><span>Frequency</span><select id="cleaningRepeat"><option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></label><label id="cleaningRepeatDayField" class="field"><span>Day</span><select id="cleaningRepeatDay"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5" selected>Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></label><div class="cleaning-hint">Choose a cleaning task or type your own title.</div></div>'''
+          must(category, category+cleaning,1)
+
+          # Cleaning presets: icon + label, including new tasks.
+          s=re.sub(r"const CLEANING_PRESETS=\[.*?\];", "const CLEANING_PRESETS=[['🛏️','Remove bedding'],['🛏️','Put bedding on'],['🧹','Hoover upstairs'],['🧹','Hoover stairs'],['🧹','Hoover downstairs'],['🪶','Dust upstairs'],['🪶','Dust downstairs'],['🧽','Mop downstairs'],['🍽️','Clean kitchen'],['🧼','Clean bathroom'],['🚽','Clean toilet'],['🚿','Clean shower'],['🧺','Change towels'],['🗑️','Empty bins'],['🍽️','Load dishwasher'],['🍽️','Empty dishwasher'],['🧸','Tidy bedrooms'],['🛋️','Tidy lounge'],['🪟','Clean windows'],['🧽','Clean kitchen floor'],['🌱','Cut grass']];", s, count=1, flags=re.S)
+          s=re.sub(r"function populateCleaningPresets\(\)\{.*?\}", "function populateCleaningPresets(){if($('cleaningPreset').options.length>1)return;for(const [icon,name] of CLEANING_PRESETS){let o=document.createElement('option');o.value=name;o.textContent=icon+' '+name;$('cleaningPreset').appendChild(o)}}", s, count=1, flags=re.S)
+
+          # Remove points totals rendering completely.
+          s=re.sub(r"function renderCleaningPoints\(\)\{.*?\}\n", '', s, count=1, flags=re.S)
+          s=s.replace('  renderCleaningPoints();\n','')
+
+          # Cards: remove points chip. Keep broom task indicator + frequency.
+          s=s.replace("${clean?`<span class=\"chip points-chip\">${Number(t.points||0)} pts</span>`:''}","")
+
+          # Data load/subscription: stop reading cleaning_points_log.
+          s=s.replace('let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], movies=[], cleaningPointsLog=[], mePerson=null','let user=null, householdId=null, people=[], tasks=[], events=[], shoppingItems=[], shoppingList=[], movies=[], mePerson=null')
+          s=s.replace("const [pp,tt,ev,sc,sl,mv,cp]=await Promise.all([","const [pp,tt,ev,sc,sl,mv]=await Promise.all([")
+          s=s.replace(",sb.from('cleaning_points_log').select('*').eq('household_id',householdId).order('completed_at',{ascending:true})]);","]);" )
+          s=s.replace("movies=mv.error?[]:(mv.data||[]);cleaningPointsLog=cp.error?[]:(cp.data||[]);mePerson=","movies=mv.error?[]:(mv.data||[]);mePerson=")
+          s=s.replace(".on('postgres_changes',{event:'*',schema:'public',table:'cleaning_points_log',filter:'household_id=eq.'+householdId},()=>loadData())","")
+
+          # Editing: no points field, and detect selected preset based on names only.
+          s=s.replace("$('cleaningPointsValue').value=t?.points||5;","")
+          s=s.replace("$('cleaningPreset').value=CLEANING_PRESETS.some(x=>x[0]===t?.title)?t.title:'';","$('cleaningPreset').value=CLEANING_PRESETS.some(x=>x[1]===t?.title)?t.title:'';")
+
+          # Recurring rows: retain DB points column at zero to stay compatible, but no point behaviour.
+          s=s.replace("points:isCleaningTask(task)?Number(task.points||0):0,","points:0,")
+
+          # Remove award function and calls.
+          s=re.sub(r"async function awardCleaningPoints\(task\)\{.*?\}\n",'',s,count=1,flags=re.S)
+          s=s.replace("if(clean)await awardCleaningPoints(saved);","")
+          s=s.replace("if(isCleaningTask(before))await awardCleaningPoints(before);","")
+          s=s.replace("notify(isCleaningTask(before)?'✓ Completed · '+Number(before.points||0)+' cleaning points':(created?'✓ Completed — next repeat added':'✓ Completed'))","notify(created?'✓ Completed — next repeat added':'✓ Completed')")
+
+          # Saving: always zero points for cleaning and no points input reference.
+          s=s.replace("points:clean?Number($('cleaningPointsValue').value||0):0,","points:0,")
+
+          # Preset change handler: title only, no points.
+          s=re.sub(r"\$\('cleaningPreset'\)\.addEventListener\('change',\(\)=>\{let o=\$\('cleaningPreset'\)\.selectedOptions\[0\];if\(o&&o\.value\)\{\$\('title'\)\.value=o\.value;\$\('cleaningPointsValue'\)\.value=o\.dataset\.points\|\|5\}\}\);", "$('cleaningPreset').addEventListener('change',()=>{let o=$('cleaningPreset').selectedOptions[0];if(o&&o.value)$('title').value=o.value});", s, count=1)
+
+          s=s.replace('data-build="3.0-category-toggle-row"','data-build="3.1-cleaning-presets-icons"')
+          p.write_text(s)
+          print('Patched',len(s))
+          PY
+      - name: Commit
+        run: |
+          git config user.name "OrganiseUs updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Simplify cleaning tasks and add preset icons" || exit 0
+          git push
