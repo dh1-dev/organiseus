@@ -1,0 +1,63 @@
+name: Tidy OrganiseUs task form
+on:
+  push:
+    paths:
+      - '.github/workflows/tidy-task-form.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          def rep(old,new,count=-1):
+              global s
+              if old not in s:
+                  raise SystemExit('Missing expected text: '+old[:140])
+              s=s.replace(old,new,count)
+
+          # Remove Activity from the filter chips and from Category choices.
+          rep('<button data-category="activity">Activity</button>','')
+          rep('<option value="activity">Activity</option>','')
+          rep("const CATEGORY_LABELS={house:'House',car:'Car',money:'Money',activity:'Activity',general:'General',cleaning:'🧹 Cleaning'};", "const CATEGORY_LABELS={house:'House',car:'Car',money:'Money',general:'General',cleaning:'🧹 Cleaning'};")
+
+          # Any old Activity tasks should behave/display as General rather than leaving a dead category behind.
+          rep("function categoryLabel(v){return CATEGORY_LABELS[v]||'General'}", "function categoryLabel(v){return CATEGORY_LABELS[v]||'General'}")
+          rep("function visibleTaskList(){return sortTasks(current().filter(t=>t.status===selectedStatus&&((mode==='me'&&meArea==='work')||selectedCategory==='all'||(t.category||'general')===selectedCategory)))}", "function visibleTaskList(){return sortTasks(current().filter(t=>{let cat=(t.category==='activity'?'general':(t.category||'general'));return t.status===selectedStatus&&((mode==='me'&&meArea==='work')||selectedCategory==='all'||cat===selectedCategory)}))}")
+
+          # Put Category first in the task form.
+          old_category='<label id="categoryField" class="field"><span>Category</span><select id="category"><option value="general">General</option><option value="house">House</option><option value="car">Car</option><option value="money">Money</option><option value="cleaning">🧹 Cleaning</option></select></label>'
+          rep(old_category,'',1)
+          rep('<form id="taskForm"><input id="taskId" type="hidden">', '<form id="taskForm"><input id="taskId" type="hidden">'+old_category,1)
+
+          # Give the normal repeat field an id so it can be hidden for Cleaning only.
+          rep('<label class="field"><span>Repeats</span><select id="repeat">', '<label id="repeatField" class="field"><span>Repeats</span><select id="repeat">',1)
+
+          # Ensure the two frequency controls are mutually exclusive and stay synchronised.
+          old="function updateCategoryVisibility(){const isWork=$('area').value==='work';$('categoryField').className=isWork?'field hidden':'field';if(isWork)$('category').value='general';const clean=!isWork&&$('category').value==='cleaning';$('cleaningFields').className=clean?'cleaning-fields':'cleaning-fields hidden';if(clean){if($('cleaningRepeat').value==='weekly'&&!$('cleaningRepeatDay').value)$('cleaningRepeatDay').value='5';$('repeat').value=$('cleaningRepeat').value;$('cleaningRepeatDayField').className=$('cleaningRepeat').value==='weekly'?'field':'field hidden';if($('cleaningRepeat').value==='weekly'){let day=Number($('cleaningRepeatDay').value),current=$('due').value;if(!current||parseLocalDate(current).getDay()!==day)$('due').value=nextWeekday(day,new Date(),true)}}}"
+          new="function updateCategoryVisibility(){const isWork=$('area').value==='work';$('categoryField').className=isWork?'field hidden':'field';if(isWork)$('category').value='general';if($('category').value==='activity')$('category').value='general';const clean=!isWork&&$('category').value==='cleaning';$('repeatField').className=clean?'field hidden':'field';$('cleaningFields').className=clean?'cleaning-fields':'cleaning-fields hidden';if(clean){if($('cleaningRepeat').value==='weekly'&&!$('cleaningRepeatDay').value)$('cleaningRepeatDay').value='5';$('repeat').value=$('cleaningRepeat').value;$('cleaningRepeatDayField').className=$('cleaningRepeat').value==='weekly'?'field':'field hidden';if($('cleaningRepeat').value==='weekly'){let day=Number($('cleaningRepeatDay').value),current=$('due').value;if(!current||parseLocalDate(current).getDay()!==day)$('due').value=nextWeekday(day,new Date(),true)}}else{$('cleaningRepeatDayField').className='field hidden'}}"
+          rep(old,new,1)
+
+          # When editing legacy Activity tasks, show General.
+          rep("$('category').value=t?.category||((t?.task_type==='cleaning')?'cleaning':'general');", "$('category').value=(t?.category==='activity'?'general':(t?.category||((t?.task_type==='cleaning')?'cleaning':'general')));",1)
+
+          # Bump build marker only.
+          s=s.replace('data-build="2.7-cleaning-category"','data-build="2.8-task-form-cleanup"')
+          p.write_text(s)
+          print('Patched', len(s))
+          PY
+      - name: Commit
+        run: |
+          git config user.name "OrganiseUs updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Tidy task categories and cleaning frequency" || exit 0
+          git push
