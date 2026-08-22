@@ -1,0 +1,91 @@
+name: Cleaning selected task title
+on:
+  push:
+    paths:
+      - '.github/workflows/cleaning-selected-title.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use cleaning selection as title
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old='<label class="field cleaning-search-field"><span>Cleaning task</span><input id="cleaningPreset" placeholder="Search cleaning tasks…" autocomplete="off"><div id="cleaningTaskOptions" class="cleaning-suggestions hidden"></div></label>'
+          new='<label class="field cleaning-search-field"><span>Cleaning task</span><div class="cleaning-picker-row"><input id="cleaningPreset" placeholder="Search cleaning tasks…" autocomplete="off"><button type="button" id="clearCleaningPreset" class="cleaning-clear hidden" aria-label="Clear cleaning task" title="Clear cleaning task">×</button></div><div id="cleaningTaskOptions" class="cleaning-suggestions hidden"></div></label>'
+          if old not in s: raise SystemExit('Cleaning search field not found')
+          s=s.replace(old,new,1)
+
+          old_title='<label class="field"><span>Title</span><input id="title" required maxlength="150"></label>'
+          new_title='<label id="titleField" class="field"><span>Title</span><input id="title" required maxlength="150"></label>'
+          if old_title not in s: raise SystemExit('Title field not found')
+          s=s.replace(old_title,new_title,1)
+
+          s=s.replace('Choose a cleaning task or type your own title.','Search and select a cleaning task.',1)
+
+          css_anchor='.cleaning-search-field{position:relative}'
+          css_insert='.cleaning-search-field{position:relative}.cleaning-picker-row{display:flex;align-items:center;gap:6px}.cleaning-picker-row input{flex:1;min-width:0}.cleaning-clear{width:40px;height:40px;flex:0 0 40px;padding:0;border-radius:9px;font-size:24px;line-height:1;color:#665d70;background:#f5f2f8;border:1px solid #cfc7da}'
+          if css_anchor not in s: raise SystemExit('Cleaning CSS anchor not found')
+          s=s.replace(css_anchor,css_insert,1)
+
+          old_pick="box.querySelectorAll('[data-cleaning-task]').forEach(b=>b.onclick=()=>{let name=b.dataset.cleaningTask;$('cleaningPreset').value=name;$('title').value=name;hideCleaningSuggestions()})"
+          new_pick="box.querySelectorAll('[data-cleaning-task]').forEach(b=>b.onclick=()=>{let name=b.dataset.cleaningTask;$('cleaningPreset').value=name;$('title').value=name;updateCleaningClearButton();hideCleaningSuggestions()})"
+          if old_pick not in s: raise SystemExit('Cleaning selection handler not found')
+          s=s.replace(old_pick,new_pick,1)
+
+          old_hide="function hideCleaningSuggestions(){let box=$('cleaningTaskOptions');if(box)box.className='cleaning-suggestions hidden'}"
+          new_hide="function hideCleaningSuggestions(){let box=$('cleaningTaskOptions');if(box)box.className='cleaning-suggestions hidden'}\nfunction updateCleaningClearButton(){let button=$('clearCleaningPreset');if(button)button.className=$('cleaningPreset').value.trim()?'cleaning-clear':'cleaning-clear hidden'}\nfunction clearCleaningPreset(){ $('cleaningPreset').value='';$('title').value='';updateCleaningClearButton();renderCleaningSuggestions('');$('cleaningPreset').focus()}"
+          if old_hide not in s: raise SystemExit('Cleaning hide function not found')
+          s=s.replace(old_hide,new_hide,1)
+
+          old_input="$('cleaningPreset').addEventListener('input',()=>renderCleaningSuggestions($('cleaningPreset').value));"
+          new_input="$('cleaningPreset').addEventListener('input',()=>{let v=$('cleaningPreset').value;$('title').value=CLEANING_PRESETS.some(x=>x[1]===v)?v:'';updateCleaningClearButton();renderCleaningSuggestions(v)});"
+          if old_input not in s: raise SystemExit('Cleaning input handler not found')
+          s=s.replace(old_input,new_input,1)
+
+          event_anchor="$('cleaningPreset').addEventListener('change',()=>{let v=$('cleaningPreset').value.trim();if(CLEANING_PRESETS.some(x=>x[1]===v))$('title').value=v});"
+          event_new=event_anchor+"$('clearCleaningPreset').addEventListener('click',clearCleaningPreset);"
+          if event_anchor not in s: raise SystemExit('Cleaning change handler not found')
+          s=s.replace(event_anchor,event_new,1)
+
+          old_vis="$('areaField').className=clean?'field hidden':'field';$('repeatField').className=clean?'field hidden':'field';"
+          new_vis="$('areaField').className=clean?'field hidden':'field';$('titleField').className=clean?'field hidden':'field';$('title').required=!clean;$('repeatField').className=clean?'field hidden':'field';"
+          if old_vis not in s: raise SystemExit('Category visibility anchor not found')
+          s=s.replace(old_vis,new_vis,1)
+
+          open_anchor="$('cleaningPreset').value=CLEANING_PRESETS.some(x=>x[1]===t?.title)?t.title:'';updateCategoryVisibility();"
+          open_new="$('cleaningPreset').value=CLEANING_PRESETS.some(x=>x[1]===t?.title)?t.title:'';updateCleaningClearButton();updateCategoryVisibility();"
+          if open_anchor not in s: raise SystemExit('openTask cleaning state not found')
+          s=s.replace(open_anchor,open_new,1)
+
+          save_anchor="if(clean)area='personal';let repeat=clean?$('cleaningRepeat').value:$('repeat').value"
+          save_new="if(clean){area='personal';let selectedCleaning=$('cleaningPreset').value.trim();if(!CLEANING_PRESETS.some(x=>x[1]===selectedCleaning)){notify('Select a cleaning task from the list');return}$('title').value=selectedCleaning}let repeat=clean?$('cleaningRepeat').value:$('repeat').value"
+          if save_anchor not in s: raise SystemExit('saveTask cleaning anchor not found')
+          s=s.replace(save_anchor,save_new,1)
+
+          s=s.replace('data-build="3.7-cleaning-one-off-default"','data-build="3.8-cleaning-selected-title"')
+          p.write_text(s)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          js=s.split('<script>')[-1].split('</script>',1)[0]
+          Path('/tmp/organiseus-app.js').write_text(js)
+          PY
+          node --check /tmp/organiseus-app.js
+
+      - name: Commit
+        run: |
+          git config user.name "OrganiseUs updater"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Use selected cleaning task as title" || exit 0
+          git push
